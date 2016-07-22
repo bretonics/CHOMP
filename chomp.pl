@@ -1,185 +1,110 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Getopt::Long; use Pod::Usage;
 
-use File::Basename qw(dirname);
-use Cwd qw(abs_path);
 use FindBin; use lib "$FindBin::RealBin/lib";
 
-use Eutil; use Parser; use Database;
+use Readonly;
 
 use Bio::Seq; use Bio::SeqIO;
 
-# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+# Own Modules (https://github.com/bretonics/Modules)
+use Bioinformatics::MyConfig;
+use Bioinformatics::MyIO;
+use Bioinformatics::Eutil;
+use Databases; use MyConfig;
+
+
+# ==============================================================================
 #
-#   CAPITAN: Andres Breton
+#   CAPITAN: Andres Breton http://andresbreton.com
 #   FILE: chomp.pl 🐊
-#   LICENSE:
-#   USAGE:
-#   DEPENDENCIES:
+#   LICENSE: MIT
+#   USAGE: Find CRISPR targets and output results for oligo ordering
+#   DEPENDENCIES:   - BioPerl modules
+#                   - Own Modules git repo
 #
-# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+# ==============================================================================
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#-------------------------------------------------------------------------------
 # USER VARIABLES
-my $SP6 = "ATTTAGGTGACACTATA";
-my $OVERLAP = "GTTTTAGAGCTAGAAATAGCAAG";
-my $CONSTOLIGO = "AAAAGCACCGACTCGGTGCCACTTTTTCAAGTTGATAACGGACTAGCCTTATTTTAACTTGCTATTTCTAGCTCTAAAAC";
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Readonly my $DW_STREAM = "";
+Readonly my $UP_STREAM = "";
+#-------------------------------------------------------------------------------
 # COMMAND LINE
-my $FILE = "";
+my $SEQ;
 my @IDS;
-my $MONGODB = "CHOMP"; #defaults to
-my $COLLECTION = "";
+my $MONGODB = "CRISPR";
+my $COLLECTION;
 my ($INSERT, @UPDATE, @READ, @REMOVE);
-my $USAGE= "\n\n $0 [options]\n
+my $USAGE= "\n\n$0 [options]\n
 Options:
-    -file           File
-    -ids            ID(s)
-    -mongo          MongoDB database name
-    -collection     Collection name in MongoDB database
-    -insert         Insert into database [optional/default]
-    -update         Update database
-    -read           Read from database
-    -remove         Remove from database
-    -help           Shows this message
+    -seq                Sequence file to search
+    -help               Shows this message
 \n";
 
 # OPTIONS
 GetOptions(
-    'file:s'        =>\$FILE,
-    'id:i{1,}'      =>\@IDS,
-    'mongo:s'       =>\$MONGODB,
-    'mongo:s'       =>\$MONGODB,
-    'collection:s'  =>\$COLLECTION,
-    'insert+'       =>\$INSERT,
-    'update:s{1,}'  =>\@UPDATE,
-    'read:s{1,}'    =>\@READ,
-    'remove:s{1,}'  =>\@REMOVE,
-    help            =>sub{pod2usage($USAGE);}
+    'seq=s'             =>\$SEQ,
+    help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+checks(); #check CL arguments
+#-------------------------------------------------------------------------------
 # VARIABLES
 my $REALBIN = "$FindBin::RealBin";
-my $OUTDIR = createOutDir("Data");
+my $OUTDIR = mkDir("CRISPRS");
 
-#Color Output
+# Color Output
 my $GRNTXT = "\e[1;32m"; #bold green
 my $REDTXT = "\e[1;31m"; #bold red
 my $NC = "\e[0m"; #color reset
 
-
-my $seqInObject = Bio::SeqIO->new(-file => "$inFile", -format => "genbank", -alphabet => "dna");
-my $format = $seqInObject->_guess_format("$inFile"); #check format of input file
-
-my $sequence = $seqInObject->next_seq;
-my $actual = $sequence->seq;
-
-my ($fileName) = $FILE =~ /(\w+)\b\./; #extract file name
-my $seqOutObject = Bio::SeqIO->new(-file => ">$fileName.fasta", -format => "fasta", -alphabet => "dna");
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# CALLS
-checks();
-
-#lookUpFeatures($seqObject);
-
-$seqOutObject->write_seq($sequence);    #write FASTA file from input file
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# SUBS
-
-#---------------------------------------------------------
-# $input = checks();
-#---------------------------------------------------------
-# This function checks for arguments passed in command-line
-# using global variables
-#---------------------------------------------------------
+# Sequence OO
+# my $seqInObject = Bio::SeqIO->new(-file => $SEQ, -format => "genbank", -alphabet => "dna");
+# my $format = $seqInObject->_guess_format($SEQ); #check format of input file
 #
-#---------------------------------------------------------
+# my $sequence = $seqInObject->next_seq;
+# my $actual = $sequence->seq;
+#
+# my ($fileName) = $SEQ =~ /(\w+)\b\./; #extract file name
+# my $seqOutObject = Bio::SeqIO->new(-file => ">$fileName.fasta", -format => "fasta", -alphabet => "dna");
+#-------------------------------------------------------------------------------
+# CALLS
+
+#-------------------------------------------------------------------------------
+# SUBS
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = checks();
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function checks for arguments passed on the command-line
+# using global variables.
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = Prompts users and exits if errors
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
-    unless ($FILE){
+    unless ($SEQ){
         die "Did not provide an input file, -file <infile.txt>", $USAGE;
     }
     if ($format ne "genbank") {
         say "Incorrect file format. You provided $format format.";
         say "Please provide a GenBank file format";
     }
-    my $argLen = @ARGV;
-    unless ($argLen >= 1) {
-        say "Did not provide the correct number of paramaters", $USAGE;
-    }
-}
-
-#---------------------------------------------------------
-# $input = ();
-#---------------------------------------------------------
-# This function takes  arguments
-#
-#---------------------------------------------------------
-#
-#---------------------------------------------------------
-sub lookUpFeatures {
-    my (@seqObjects) = @_;
-    my $arraySize = @seqObjects;
-    for(my $i=0; $i<$arraySize;$i++) {  #loop through seqObjects passed
-        for my $feat ($seqObjects[$i]->get_SeqFeatures) {   #gets seqObject features
-            # Get Protein ID and Translation
-            if ($feat->primary_tag eq "CDS") {
-                getFeatures($feat, $feat->primary_tag);
-            }
-            # Get Exon
-            if ($feat->primary_tag eq "exon") {
-                getFeatures($feat, $feat->primary_tag);
-            }
-            }
-
-        }
-    }
-}
-
-#---------------------------------------------------------
-# $input = ();
-#---------------------------------------------------------
-# This function takes  arguments
-#
-#---------------------------------------------------------
-#
-#---------------------------------------------------------
-sub getFeatures {
-    my ($feat, $primaryTag) = @_;
-    print "\nPrimary Tag: ", $feat->primary_tag, " start: ", $feat->start, " ends: ", $feat->end, " strand: ", $feat->strand,"\n";
-    for my $tag ($feat->get_all_tags) { #gets seqObject tags from primary feature
-        print " tag: ", $tag, "\n";
-        for my $value ($feat->get_tag_values($tag)) { #gets seq object values from tag
-            print "  value: ", $value, "\n";
-        }
-    }
 
 }
-#---------------------------------------------------------
-# $result = ();
-#---------------------------------------------------------
-# This function takes  arguments
-#
-#---------------------------------------------------------
-#
-#---------------------------------------------------------
-sub createOutDir {
-    my $outDir = @_;
+
+#-------------------------------------------------------------------------------
+# HELPERS
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ("DirName");
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes one argument, a string to write directory
+# if non-existent.
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = ();
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub _mkDir {
+    my ($outDir) = @_;
     `mkdir $outDir` unless(-e $outDir);
-    return $outDir;
-}
-sub createDownloadDir {
-    my $outDir = "Data";
-    if (! -e $outDir){
-        `mkdir $outDir`;
-    }
-    return $outDir; subhd
-}
-
-sub compare {
-    my () = @_;
-
 }
