@@ -10,20 +10,18 @@ use Readonly;
 use Bio::Seq; use Bio::SeqIO;
 
 # Own Modules (https://github.com/bretonics/Modules)
-use Bioinformatics::MyConfig;
-use Bioinformatics::MyIO;
+use MyConfig; use MyIO; use Databases;
 use Bioinformatics::Eutil;
-use Databases; use MyConfig;
 
 
 # ==============================================================================
 #
-#   CAPITAN: Andres Breton http://andresbreton.com
-#   FILE: chomp.pl 🐊
-#   LICENSE: MIT
-#   USAGE: Find CRISPR targets and output results for oligo ordering
+#   CAPITAN:        Andres Breton, http://andresbreton.com
+#   FILE:           chomp.pl :crocodile:
+#   LICENSE:        MIT
+#   USAGE:          Find CRISPR targets and output results for oligo ordering
 #   DEPENDENCIES:   - BioPerl modules
-#                   - Own Modules git repo
+#                   - Own 'Modules' repo
 #
 # ==============================================================================
 
@@ -35,31 +33,32 @@ Readonly my $UP_STREAM = "";
 #-------------------------------------------------------------------------------
 # COMMAND LINE
 my $SEQ;
-my @IDS;
-my $MONGODB = "CRISPR";
-my $COLLECTION;
-my ($INSERT, @UPDATE, @READ, @REMOVE);
-my $USAGE= "\n\n$0 [options]\n
+my $WINDOWSIZE  = 23;
+my $USAGE       = "\n\n$0 [options]\n
 Options:
     -seq                Sequence file to search
+    -window             Window size for CRISPR oligo (default = 23)
     -help               Shows this message
 \n";
 
 # OPTIONS
 GetOptions(
     'seq=s'             =>\$SEQ,
+    'window:i'          =>\$WINDOWSIZE,
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
 checks(); #check CL arguments
 #-------------------------------------------------------------------------------
 # VARIABLES
+my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
+
 my $REALBIN = "$FindBin::RealBin";
-my $OUTDIR = mkDir("CRISPRS");
+my $OUTDIR  = mkDir("CRISPRS");
 
 # Color Output
-my $GRNTXT = "\e[1;32m"; #bold green
-my $REDTXT = "\e[1;31m"; #bold red
-my $NC = "\e[0m"; #color reset
+my $GRNTXT  = "\e[1;32m"; #bold green
+my $REDTXT  = "\e[1;31m"; #bold red
+my $NC      = "\e[0m"; #color reset
 
 # Sequence OO
 # my $seqInObject = Bio::SeqIO->new(-file => $SEQ, -format => "genbank", -alphabet => "dna");
@@ -75,14 +74,15 @@ my $NC = "\e[0m"; #color reset
 
 #-------------------------------------------------------------------------------
 # SUBS
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = checks();
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function checks for arguments passed on the command-line
 # using global variables.
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = Prompts users and exits if errors
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     unless ($SEQ){
         die "Did not provide an input file, -file <infile.txt>", $USAGE;
@@ -96,6 +96,7 @@ sub checks {
 
 #-------------------------------------------------------------------------------
 # HELPERS
+
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ("DirName");
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -107,4 +108,5 @@ sub checks {
 sub _mkDir {
     my ($outDir) = @_;
     `mkdir $outDir` unless(-e $outDir);
+    return;
 }
