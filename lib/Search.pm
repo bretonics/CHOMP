@@ -8,12 +8,12 @@ our @EXPORT_OK = qw(); #functions for explicit export
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Carp;
 
-use MyConfig;
+use MyConfig; use MyIO;
 
 # ==============================================================================
 #
-#   CAPITAN: Andres Breton http://andresbreton.com
-#   FILE: search.pm
+#   CAPITAN:        Andres Breton, http://andresbreton.com
+#   FILE:           search.pm
 #   LICENSE:
 #   USAGE:
 #   DEPENDENCIES:   - NCBI's BLAST+ CL utility
@@ -51,11 +51,58 @@ Search::;
 #-------------------------------------------------------------------------------
 # MAIN
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+=head2 findOligo
+
+    Arg [1]     : Sequence to be searched
+
+    Example     : findOligo($sequence, $windowSize)
+
+    Description : Find CRISPR targets
+
+    Returntype  : Hash of hashes reference
+
+    Status      : Development
+
+=cut
+sub findOligo {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($sequence, $windowSize)';
+    @_ == 2 or confess wrongNumberArguments(), $filledUsage;
+
+    my ($sequence, $windowSize) = @_;
+    my $seqLen = length($sequence);
+    my %CRISPRS;
+
+    for (my $i = 0; $i < $seqLen; $i++) {
+        my $window = substr $sequence, $i, $windowSize;
+        exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
+        my $kmer = ($windowSize - 3); #
+        if ($window =~ /(.GG)$/) {
+            my $oligo = substr $window, 0, $kmer; # get first 'kmer' nucleotides of oligo
+            my $PAM = $1; #get PAM sequence (NGG)
+
+            # GC Content
+            my $contentG = $window =~ tr/G//;
+            my $contentC = $window =~ tr/C//;
+            my $GC = ($contentG + $contentC)/$windowSize;
+
+            # Store CRISPR oligomers and info in Hash of Hashes
+            $CRISPRS{$oligo}{"PAM"}  = $PAM;
+            $CRISPRS{$oligo}{"G"}    = $contentG;
+            $CRISPRS{$oligo}{"C"}    = $contentC;
+            $CRISPRS{$oligo}{"GC"}   = $GC;
+        }
+    }
+
+    return(\%CRISPRS);
+}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
 
     Arg [1]     :
 
-    Example     :
+    Example     : blast(\%CRISPRS)
 
     Description : Run BLAST+ search for CRISPR targets
 
@@ -65,13 +112,14 @@ Search::;
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\@CRISPRS)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS)';
     @_ == 1 or confess wrongNumberArguments(), $filledUsage;
 
-    my (@CRISPRS) = @_;
+    my ($CRISPRS) = @_;
 
     return;
 }
+
 
 #-------------------------------------------------------------------------------
 # HELPERS
@@ -85,7 +133,7 @@ Andres Breton © 2016
 
 =head1 CONTACT
 
-Please email comments or questions to Andres Breton me@andresbreton.com
+Please email comments or questions to Andres Breton, me@andresbreton.com
 
 =head1 SETTING PATH
 
