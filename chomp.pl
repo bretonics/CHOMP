@@ -8,12 +8,13 @@ use FindBin; use lib "$FindBin::RealBin/lib";
 use Readonly;
 
 use Bio::Seq; use Bio::SeqIO;
+use Search;
 
 # Own Modules (https://github.com/bretonics/Modules)
-use MyConfig; use MyIO; use Databases;
+use MyConfig; use MyIO; use Handlers; use Databases;
 use Bioinformatics::Eutil;
 
-
+use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -55,23 +56,19 @@ my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 my $REALBIN = "$FindBin::RealBin";
 my $OUTDIR  = mkDir("CRISPRS");
 
-# Color Output
-my $GRNTXT  = "\e[1;32m"; #bold green
-my $REDTXT  = "\e[1;31m"; #bold red
-my $NC      = "\e[0m"; #color reset
-
 # Sequence OO
-# my $seqInObject = Bio::SeqIO->new(-file => $SEQ, -format => "genbank", -alphabet => "dna");
-# my $format = $seqInObject->_guess_format($SEQ); #check format of input file
-#
-# my $sequence = $seqInObject->next_seq;
-# my $actual = $sequence->seq;
-#
-# my ($fileName) = $SEQ =~ /(\w+)\b\./; #extract file name
-# my $seqOutObject = Bio::SeqIO->new(-file => ">$fileName.fasta", -format => "fasta", -alphabet => "dna");
+my $seqInObj    = Bio::SeqIO->new(-file => $SEQ, -alphabet => "dna");
+my $format      = $seqInObj->_guess_format($SEQ); #check format of input file
+my $seqObj      = $seqInObj->next_seq;
+my $sequence    = $seqObj->seq;
+
+my ($fileName)  = $SEQ =~ /(\w+)\b\./; #extract file name for output file name
+my $seqOutObj   = Bio::SeqIO->new(-file => ">$fileName.fasta", -format => "fasta", -alphabet => "dna");
 #-------------------------------------------------------------------------------
 # CALLS
-
+my %CRISPRS = findOligo($sequence,$WINDOWSIZE);
+# say %CRISPRS;
+print Dumper(\%CRISPRS);
 #-------------------------------------------------------------------------------
 # SUBS
 
@@ -85,28 +82,9 @@ my $NC      = "\e[0m"; #color reset
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     unless ($SEQ){
-        die "Did not provide an input file, -file <infile.txt>", $USAGE;
+        die "\nDid not provide an input file, -file <infile.txt>", $USAGE;
     }
-    if ($format ne "genbank") {
-        say "Incorrect file format. You provided $format format.";
-        say "Please provide a GenBank file format";
-    }
-
 }
 
 #-------------------------------------------------------------------------------
 # HELPERS
-
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $input = ("DirName");
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# This function takes one argument, a string to write directory
-# if non-existent.
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $return = ();
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-sub _mkDir {
-    my ($outDir) = @_;
-    `mkdir $outDir` unless(-e $outDir);
-    return;
-}
