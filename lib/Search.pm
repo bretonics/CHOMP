@@ -2,14 +2,14 @@ package Search;
 
 use Exporter qw(import);
 our @ISA = qw(Exporter);
-our @EXPORT = qw(blast); #functions exported by default
-our @EXPORT_OK = qw(); #functions for explicit export
+our @EXPORT = qw(findOligo); #functions exported by default
+our @EXPORT_OK = qw(blast); #functions for explicit export
 
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Carp;
 
 use MyConfig; use MyIO;
-
+use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -71,29 +71,35 @@ sub findOligo {
 
     my ($sequence, $windowSize) = @_;
     my $seqLen = length($sequence);
-    my %CRISPRS;
+
+    my (%CRISPRS, $oligo, $PAM, $contentG, $contentC, $GC);
 
     for (my $i = 0; $i < $seqLen; $i++) {
         my $window = substr $sequence, $i, $windowSize;
         exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
-        my $kmer = ($windowSize - 3); #
-        if ($window =~ /(.GG)$/) {
-            my $oligo = substr $window, 0, $kmer; # get first 'kmer' nucleotides of oligo
-            my $PAM = $1; #get PAM sequence (NGG)
+        my $kmer = ($windowSize - 3); #kmer is the string of base pairs before NGG
+
+        if ($window =~ /(.+)(.GG)$/) {
+            ($oligo, $PAM) = ($1, $2); #get first 'kmer' number of nucleotides in oligo + PAM (NGG)
 
             # GC Content
-            my $contentG = $window =~ tr/G//;
-            my $contentC = $window =~ tr/C//;
-            my $GC = ($contentG + $contentC)/$windowSize;
+            $contentG = $window =~ tr/G//;
+            $contentC = $window =~ tr/C//;
+            $GC = ($contentG + $contentC)/$windowSize;
 
             # Store CRISPR oligomers and info in Hash of Hashes
-            $CRISPRS{$oligo}{"PAM"}  = $PAM;
-            $CRISPRS{$oligo}{"G"}    = $contentG;
-            $CRISPRS{$oligo}{"C"}    = $contentC;
-            $CRISPRS{$oligo}{"GC"}   = $GC;
+            my $content = { #anonymous hash
+                'PAM'  => $PAM,
+                'G'    => $contentG,
+                'C'    => $contentC,
+                'GC'   => $GC,
+            };
+            $CRISPRS{$oligo} = $content;
         }
+print Dumper(\%CRISPRS);
+say "=============";
     }
-
+    print Dumper(\%CRISPRS);
     return(\%CRISPRS);
 }
 
