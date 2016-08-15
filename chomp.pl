@@ -14,11 +14,10 @@ use Search;
 use MyConfig; use MyIO; use Handlers; use Databases;
 use Bioinformatics::Eutil;
 
-use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
-#   FILE:           chomp.pl :crocodile:
+#   FILE:           chomp.pl
 #   LICENSE:        MIT
 #   USAGE:          Find CRISPR targets and output results for oligo ordering
 #   DEPENDENCIES:   - BioPerl modules
@@ -29,8 +28,8 @@ use Data::Dumper;
 
 #-------------------------------------------------------------------------------
 # USER VARIABLES
-Readonly my $DW_STREAM = "";
-Readonly my $UP_STREAM = "";
+# Readonly my $DW_STREAM = "";
+# Readonly my $UP_STREAM = "";
 #-------------------------------------------------------------------------------
 # COMMAND LINE
 my $SEQ;
@@ -66,9 +65,8 @@ my ($fileName)  = $SEQ =~ /(\w+)\b\./; #extract file name for output file name
 my $seqOutObj   = Bio::SeqIO->new(-file => ">$fileName.fasta", -format => "fasta", -alphabet => "dna");
 #-------------------------------------------------------------------------------
 # CALLS
-my %CRISPRS = findOligo($sequence,$WINDOWSIZE);
-# say %CRISPRS;
-print Dumper(\%CRISPRS);
+my $CRISPRS = findOligo($sequence, $WINDOWSIZE); #CRISPR hash of hashes reference
+
 #-------------------------------------------------------------------------------
 # SUBS
 

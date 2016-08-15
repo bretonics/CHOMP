@@ -9,7 +9,7 @@ use strict; use warnings; use diagnostics; use feature qw(say);
 use Carp;
 
 use MyConfig; use MyIO;
-use Data::Dumper;
+
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -72,11 +72,12 @@ sub findOligo {
     my ($sequence, $windowSize) = @_;
     my $seqLen = length($sequence);
 
-    my (%CRISPRS, $oligo, $PAM, $contentG, $contentC, $GC);
+    my (%CRISPRS, $oligo, $PAM, $content, $contentG, $contentC, $GC);
 
     for (my $i = 0; $i < $seqLen; $i++) {
         my $window = substr $sequence, $i, $windowSize;
-        exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
+        return(\%CRISPRS) and exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
+        # exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
         my $kmer = ($windowSize - 3); #kmer is the string of base pairs before NGG
 
         if ($window =~ /(.+)(.GG)$/) {
@@ -88,7 +89,7 @@ sub findOligo {
             $GC = ($contentG + $contentC)/$windowSize;
 
             # Store CRISPR oligomers and info in Hash of Hashes
-            my $content = { #anonymous hash
+            $content = { #anonymous hash
                 'PAM'  => $PAM,
                 'G'    => $contentG,
                 'C'    => $contentC,
@@ -96,13 +97,8 @@ sub findOligo {
             };
             $CRISPRS{$oligo} = $content;
         }
-print Dumper(\%CRISPRS);
-say "=============";
     }
-    print Dumper(\%CRISPRS);
-    return(\%CRISPRS);
 }
-
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
 
