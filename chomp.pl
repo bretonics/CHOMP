@@ -30,6 +30,7 @@ use Bioinformatics::Eutil;
 # USER VARIABLES
 # Readonly my $DW_STREAM = "";
 # Readonly my $UP_STREAM = "";
+
 #-------------------------------------------------------------------------------
 # COMMAND LINE
 my $SEQ;
@@ -48,6 +49,7 @@ GetOptions(
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
 checks(); #check CL arguments
+
 #-------------------------------------------------------------------------------
 # VARIABLES
 my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
@@ -62,14 +64,18 @@ my $seqObj      = $seqInObj->next_seq;
 my $sequence    = $seqObj->seq;
 
 my ($fileName)  = $SEQ =~ /(\w+)\b\./; #extract file name for output file name
-my $seqOutObj   = Bio::SeqIO->new(-file => ">$fileName.fasta", -format => "fasta", -alphabet => "dna");
+my $seqOutObj   = Bio::SeqIO->new(  -file => ">$fileName.fasta",
+                                    -format => "fasta",
+                                    -alphabet => "dna");
+
 #-------------------------------------------------------------------------------
 # CALLS
 my $CRISPRS = findOligo($sequence, $WINDOWSIZE); #CRISPR hash of hashes reference
+my $CRPfile = writeCRPs($CRISPRS, $OUTDIR, $fileName); #CRISPRs FASTA file
+my $targets = Search::blast($CRPfile, $SEQ, $WINDOWSIZE); #CRISPR target hits
 
 #-------------------------------------------------------------------------------
 # SUBS
-
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = checks();
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -80,9 +86,32 @@ my $CRISPRS = findOligo($sequence, $WINDOWSIZE); #CRISPR hash of hashes referenc
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     unless ($SEQ){
-        die "\nDid not provide an input file, -file <infile.txt>", $USAGE;
+        die "\nDid not provide an input file, -seq <infile.txt>", $USAGE;
     }
 }
 
 #-------------------------------------------------------------------------------
 # HELPERS
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($CRISPRS, $OUTDIR, $fileName);
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 3 arguments; HoH reference of CRISPR oligos,
+# the output diretory, and the output file name. Writes each CRISPR
+# target found in FASTA and returns file location.
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = ($outFile);
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub writeCRPs {
+    my ($CRISPRS, $OUTDIR, $fileName) = @_;
+    my $outFile = "$OUTDIR/$fileName" . ".crisprs";
+    my $FH = getFH(">", $outFile);
+    my $count = 0;
+
+    foreach my $target (keys %$CRISPRS) {
+        $target = $target . $CRISPRS->{$target}->{"PAM"}; #join oligo + PAM sequence
+        say $FH ">CRISPR_$count\n$target";
+        $count++;
+    }
+
+    return $outFile;
+}
