@@ -28,17 +28,19 @@ use Bioinformatics::Eutil;
 
 #-------------------------------------------------------------------------------
 # USER VARIABLES
-# Readonly my $DW_STREAM = "";
-# Readonly my $UP_STREAM = "";
+Readonly my $DW_STREAM => "DOWNDOWN";
+Readonly my $UP_STREAM => "UPUPUP";
 
 #-------------------------------------------------------------------------------
 # COMMAND LINE
 my $SEQ;
 my $WINDOWSIZE  = 23;
+my $OUTFILE;
 my $USAGE       = "\n\n$0 [options]\n
 Options:
     -seq                Sequence file to search
     -window             Window size for CRISPR oligo (default = 23)
+    -out                Out file name
     -help               Shows this message
 \n";
 
@@ -46,6 +48,7 @@ Options:
 GetOptions(
     'seq=s'             =>\$SEQ,
     'window:i'          =>\$WINDOWSIZE,
+    'out=s'             =>\$OUTFILE,
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
 checks(); #check CL arguments
@@ -71,8 +74,9 @@ my $seqOutObj   = Bio::SeqIO->new(  -file => ">$fileName.fasta",
 #-------------------------------------------------------------------------------
 # CALLS
 my $CRISPRS = findOligo($sequence, $WINDOWSIZE); #CRISPR hash of hashes reference
-my $CRPfile = writeCRPs($CRISPRS, $OUTDIR, $fileName); #CRISPRs FASTA file
+my $CRPfile = writeCRPfasta($CRISPRS, $OUTDIR, $fileName); #CRISPRs FASTA file
 my $targets = Search::blast($CRPfile, $SEQ, $WINDOWSIZE); #CRISPR target hits
+writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
@@ -90,8 +94,45 @@ sub checks {
     }
 }
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ();
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 argument;
+#
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $output = File containing CRISPR target information
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub writeCRPfile {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DW_STREAM, $UP_STREAM, $OUTFILE)';
+    @_ == 5 or die wrongNumberArguments(), $filledUsage;
+
+    my ($CRISPRS, $targets, $down, $up, $file) = @_;
+    my @CRPseqs;
+
+    # *************
+    # Should move this to findOligo sub in Search module, then return as array + \%CRISPRS
+    foreach my $crispr (keys %$CRISPRS)
+        push @CRPseqs, $crispr . $CRISPRS->{$crispr}->{"PAM"}; #join oligo + PAM sequence -> push to array
+    }
+
+    while ( my ($id, $value) = each(%$targets) ) { #get key-value pair. Value is anonymous array ref of hash(es)
+        my $numMatches = @$value; #number of hashes == number of matches for same CRISPR sequence
+        # say $down . . $up; next;
+        my $FH = getFH(">>", $file);
+        while (<$FH>) {
+            foreach my $hashRef (@$value) { #each hash is a different match for same CRISPR sequence
+                my (%hash) = %$hashRef;
+
+                # say "Crispr is: $id, Hash is: ", $hashRef;
+            }
+        }
+    }
+
+}
 #-------------------------------------------------------------------------------
 # HELPERS
+
+# ***************** MOVE TO MODULE AS HELPER SUB FOR BLAST
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ($CRISPRS, $OUTDIR, $fileName);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -101,9 +142,12 @@ sub checks {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = ($outFile);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-sub writeCRPs {
+sub writeCRPfasta {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($CRISPRS, $OUTDIR, $fileName)';
+    @_ == 3 or die wrongNumberArguments(), $filledUsage;
+
     my ($CRISPRS, $OUTDIR, $fileName) = @_;
-    my $outFile = "$OUTDIR/$fileName" . ".crisprs";
+    my $outFile = "$OUTDIR/$fileName.fasta";
     my $FH = getFH(">", $outFile);
     my $count = 0;
 
