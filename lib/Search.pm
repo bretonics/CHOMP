@@ -56,6 +56,8 @@ Search::;
 
     Arg [1]     : Sequence to be searched
 
+    Arg [2]     : Window size of CRISPR target
+
     Example     : findOligo($sequence, $windowSize)
 
     Description : Find CRISPR targets
@@ -76,8 +78,7 @@ sub findOligo {
 
     for (my $i = 0; $i < $seqLen; $i++) {
         my $window = substr $sequence, $i, $windowSize;
-        return(\%CRISPRS) and exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
-        # exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence
+        return(\%CRISPRS) and exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence, return CRISPR sequences found
         my $kmer = ($windowSize - 3); #kmer is the string of base pairs before NGG
 
         if ($window =~ /(.+)(.GG)$/) {
@@ -89,7 +90,7 @@ sub findOligo {
             $GC = ($contentG + $contentC)/$windowSize;
 
             # Store CRISPR oligomers and info in Hash of Hashes
-            $content = { #anonymous hash
+            $content = { #anonymous hash of relevant oligo content
                 'PAM'  => $PAM,
                 'G'    => $contentG,
                 'C'    => $contentC,
@@ -106,7 +107,9 @@ sub findOligo {
 
     Arg [2]     : Sequence from sequence file provided for search
 
-    Example     : blast(\%CRISPRS)
+    Arg [3]     : Window size of CRISPR target provided
+
+    Example     : blast(\%CRISPRS, $SEQ, $WINDOWSIZE)
 
     Description : Run BLAST+ search for CRISPR targets
 
@@ -116,23 +119,34 @@ sub findOligo {
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, $SEQ)';
-    @_ == 2 or confess wrongNumberArguments(), $filledUsage;
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $SEQ, $WINDOWSIZE)';
+    @_ == 3 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRISPRS, $seq) = @_;
-    my %CRISPRS = %$CRISPRS;
-    my %targets;
+    my ($CRPfile, $seqFile, $word_size) = @_;
+    my (%targets, $info);
+    $word_size = sprintf "%.0f", ($word_size/2); #round up word_size
+    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $word_size -outfmt \"6 qseqid qseqid qstart qend sstart send sstrand pident nident\""; #use 'blastn-short' settings for sequences shorter than 30 nucleotides
 
-    foreach my $target (keys %CRISPRS) {
-        $target = $target . $CRISPRS{$target}{"PAM"}; #join oligo + PAM sequence
-        my $BLASTCMD = "blastn -query $target -subject $seq -outfmt \"7 qstart qend sstart send sstrand pident nident\"";
+    open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
+    while ( my $blastResult = <BLAST> ) {
+        my ($nident) = $blastResult =~ /(\d+)$/; #get number of identical matches
+        next if ($nident < $word_size); #skip if match has low identity matches ( < half of $WINDOWSIZE )
+        my @result = split('\t', $blastResult);
+        my $crispr = $result[0];
 
-        open(BLAST, $BLASTCMD) or die "Can't open BLAST commmand", $!;
-        while (<BLAST>) {
-
-        }
-
-    }
+        $info = { #anonymous hash with BLAST info for each match
+            'qseqid'    => $result[1],
+            'qstart'    => $result[2],
+            'qend'      => $result[3],
+            'sstart'    => $result[4],
+            'send'      => $result[5],
+            'sstrand'   => $result[6],
+            'pident'    => $result[7],
+            'nident'    => $result[8],
+        };
+        # Hash of Array of Hashes to store BLAST results for each query -- array to account for multiple hits for each CRISPR target
+        push @{$targets{$crispr}} , $info;
+    } close BLAST;
 
     return(\%targets);
 }
