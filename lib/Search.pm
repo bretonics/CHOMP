@@ -22,7 +22,7 @@ use MyConfig; use MyIO;
 
 =head1 NAME
 
-Search - package calling a BLAST search to find CRISPR offsite targets
+Search - package searching CRISPR sequences and offsite targets
 
 =head1 SYNOPSIS
 
@@ -36,13 +36,13 @@ Creation:
 
 =head2 Default Behaviors
 
-Exports $SUB subroutine by default
+Exports findOligo subroutine by default
 
 use Search;
 
 =head2 Optional Behaviors
 
-Search::;
+Search::blast;
 
 =head1 FUNCTIONS
 
@@ -96,6 +96,8 @@ sub findOligo {
                 'C'    => $contentC,
                 'GC'   => $GC,
             };
+            # Hash key == CRISPR sequence
+            # Hash value == HoH with CRISPR content info
             $CRISPRS{$oligo} = $content;
         }
     }
@@ -131,6 +133,7 @@ sub blast {
     while ( my $blastResult = <BLAST> ) {
         my ($nident) = $blastResult =~ /(\d+)$/; #get number of identical matches
         next if ($nident < $word_size); #skip if match has low identity matches ( < half of $WINDOWSIZE )
+
         my @result = split('\t', $blastResult);
         my $crispr = $result[0];
 
@@ -144,7 +147,10 @@ sub blast {
             'pident'    => $result[7],
             'nident'    => $result[8],
         };
-        # Hash of Array of Hashes to store BLAST results for each query -- array to account for multiple hits for each CRISPR target
+        # Hash of Array of Hashes to store BLAST results for each query
+        # -- Hash key == CRISRP name
+        # -- Array accounts for multiple hits for each CRISPR sequence
+        # -- Hash contains BLAST match info
         push @{$targets{$crispr}} , $info;
     } close BLAST;
 
