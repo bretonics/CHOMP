@@ -67,16 +67,13 @@ my $seqObj      = $seqInObj->next_seq;
 my $sequence    = $seqObj->seq;
 
 my ($fileName)  = $SEQ =~ /(\w+)\b\./; #extract file name for output file name
-my $seqOutObj   = Bio::SeqIO->new(  -file => ">$fileName.fasta",
-                                    -format => "fasta",
-                                    -alphabet => "dna");
 
 #-------------------------------------------------------------------------------
 # CALLS
-my $CRISPRS = findOligo($sequence, $WINDOWSIZE); #CRISPR hash of hashes reference
+my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
 my $CRPfile = writeCRPfasta($CRISPRS, $OUTDIR, $fileName); #CRISPRs FASTA file
 my $targets = Search::blast($CRPfile, $SEQ, $WINDOWSIZE); #CRISPR target hits
-writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
+# writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
@@ -90,7 +87,10 @@ writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     unless ($SEQ){
-        die "\nDid not provide an input file, -seq <infile.txt>", $USAGE;
+        die "\nDid not provide an input file, -seq <infile>", $USAGE;
+    }
+    unless ($OUTFILE){
+        die "\nDid not provide an output file, -out <outfile>", $USAGE;
     }
 }
 
@@ -107,13 +107,6 @@ sub writeCRPfile {
     @_ == 5 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $targets, $down, $up, $file) = @_;
-    my @CRPseqs;
-
-    # *************
-    # Should move this to findOligo sub in Search module, then return as array + \%CRISPRS
-    foreach my $crispr (keys %$CRISPRS)
-        push @CRPseqs, $crispr . $CRISPRS->{$crispr}->{"PAM"}; #join oligo + PAM sequence -> push to array
-    }
 
     while ( my ($id, $value) = each(%$targets) ) { #get key-value pair. Value is anonymous array ref of hash(es)
         my $numMatches = @$value; #number of hashes == number of matches for same CRISPR sequence
@@ -147,7 +140,7 @@ sub writeCRPfasta {
     @_ == 3 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $OUTDIR, $fileName) = @_;
-    my $outFile = "$OUTDIR/$fileName.fasta";
+    my $outFile = "$OUTDIR\/$fileName.fasta";
     my $FH = getFH(">", $outFile);
     my $count = 0;
 
@@ -155,7 +148,7 @@ sub writeCRPfasta {
         $target = $target . $CRISPRS->{$target}->{"PAM"}; #join oligo + PAM sequence
         say $FH ">CRISPR_$count\n$target";
         $count++;
-    }
+    } close $FH;
 
     return $outFile;
 }
