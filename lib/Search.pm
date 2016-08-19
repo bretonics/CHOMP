@@ -75,15 +75,18 @@ sub findOligo {
     my $seqLen = length($sequence);
 
     my (%CRISPRS, @CRPseqs, $oligo, $PAM, $content, $contentG, $contentC, $GC);
+    my $instance = 0; #track CRISPR count
 
     for (my $i = 0; $i < $seqLen; $i++) {
         my $window = substr $sequence, $i, $windowSize;
 
         # Return CRISPR sequences and information once done
         if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence, return CRISPR sequences found
-            foreach my $crispr (keys %CRISPRS) {
-                push @CRPseqs, $crispr . $CRISPRS{$crispr}{"PAM"}; #join oligo + PAM sequence -> push to array
+            foreach my $name (keys %CRISPRS) {
+                my $crispr = $CRISPRS{$name}{"oligo"} . $CRISPRS{$name}{"PAM"}; #join oligo + PAM sequence
+                push @CRPseqs, $crispr #push to array
             }
+            # Return references of HoH containing all CRISPR instances found and respective information for each and array with just the sequences joined (kmer oligo + PAM)
             return(\%CRISPRS, \@CRPseqs);
         };
 
@@ -91,6 +94,7 @@ sub findOligo {
 
         if ($window =~ /(.+)(.GG)$/) {
             ($oligo, $PAM) = ($1, $2); #get first 'kmer' number of nucleotides in oligo + PAM (NGG)
+            my $name = "CRISPR_$instance"; $instance++;
 
             # GC Content
             $contentG = $window =~ tr/G//;
@@ -99,14 +103,15 @@ sub findOligo {
 
             # Store CRISPR oligomers and info in Hash of Hashes
             $content = { #anonymous hash of relevant oligo content
-                'PAM'  => $PAM,
-                'G'    => $contentG,
-                'C'    => $contentC,
-                'GC'   => $GC,
+                'oligo' => $oligo,
+                'PAM'   => $PAM,
+                'G'     => $contentG,
+                'C'     => $contentC,
+                'GC'    => $GC,
             };
-            # Hash key == CRISPR sequence
+            # Hash key == CRISPR sequence name
             # Hash value == HoH with CRISPR content info
-            $CRISPRS{$oligo} = $content;
+            $CRISPRS{$name} = $content;
         }
     }
 }

@@ -13,7 +13,7 @@ use Search;
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers; use Databases;
 use Bioinformatics::Eutil;
-
+use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -144,9 +144,11 @@ sub writeCRPfasta {
     my $FH = getFH(">", $outFile);
     my $count = 0;
 
-    foreach my $target (keys %$CRISPRS) {
-        $target = $target . $CRISPRS->{$target}->{"PAM"}; #join oligo + PAM sequence
-        say $FH ">CRISPR_$count\n$target";
+    foreach my $crispr (keys %$CRISPRS) {
+        my $oligo = $CRISPRS->{$crispr}->{"oligo"};
+        my $PAM = $CRISPRS->{$crispr}->{"PAM"};
+        $crispr = $oligo . $PAM ; #join oligo + PAM sequence
+        say $FH ">CRISPR_$count\n$crispr";
         $count++;
     } close $FH;
 
