@@ -84,6 +84,7 @@ sub findOligo {
         if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence, return CRISPR sequences found
             foreach my $name (keys %CRISPRS) {
                 my $crispr = $CRISPRS{$name}{"oligo"} . $CRISPRS{$name}{"PAM"}; #join oligo + PAM sequence
+                $CRISPRS{$name}{"sequence"} = $crispr; #add CRISPR sequence (oligo + PAM) to each hash
                 push @CRPseqs, $crispr #push to array
             }
             # Return references of HoH containing all CRISPR instances found and respective information for each and array with just the sequences joined (kmer oligo + PAM)
@@ -137,18 +138,18 @@ sub blast {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $SEQ, $WINDOWSIZE)';
     @_ == 3 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRPfile, $seqFile, $word_size) = @_;
+    my ($CRPfile, $seqFile, $wordSize) = @_;
     my (%targets, $info);
-    $word_size = sprintf "%.0f", ($word_size/2); #round up word_size
-    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $word_size -outfmt \"6 qseqid qseqid qstart qend sstart send sstrand pident nident\""; #use 'blastn-short' settings for sequences shorter than 30 nucleotides
+    $wordSize = sprintf "%.0f", ($wordSize/2); #Make wordSize == 1/2 of WINDOWSIZE when searching BLAST hits
+    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -outfmt \"6 qseqid qseqid qstart qend sstart send sstrand pident nident\""; #use 'blastn-short' settings for sequences shorter than 30 nucleotides
 
     open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
     while ( my $blastResult = <BLAST> ) {
         my ($nident) = $blastResult =~ /(\d+)$/; #get number of identical matches
-        next if ($nident < $word_size); #skip if match has low identity matches ( < half of $WINDOWSIZE )
+        next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
 
         my @result = split('\t', $blastResult);
-        my $crispr = $result[0];
+        my $crispr = $result[0]; #CRISPR sequence name ex.) 'CRISPR_0'
 
         $info = { #anonymous hash with BLAST info for each match
             'qseqid'    => $result[1],
@@ -164,7 +165,7 @@ sub blast {
         # -- Hash key == CRISRP name
         # -- Array accounts for multiple hits for each CRISPR sequence
         # -- Hash contains BLAST match info
-        push @{$targets{$crispr}} , $info;
+        push @{ $targets{$crispr} } , $info;
     } close BLAST;
 
     return(\%targets);
