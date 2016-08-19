@@ -74,11 +74,19 @@ sub findOligo {
     my ($sequence, $windowSize) = @_;
     my $seqLen = length($sequence);
 
-    my (%CRISPRS, $oligo, $PAM, $content, $contentG, $contentC, $GC);
+    my (%CRISPRS, @CRPseqs, $oligo, $PAM, $content, $contentG, $contentC, $GC);
 
     for (my $i = 0; $i < $seqLen; $i++) {
         my $window = substr $sequence, $i, $windowSize;
-        return(\%CRISPRS) and exit if ( length($window) < $windowSize ); #don't go out of bounds when at end of sequence, return CRISPR sequences found
+
+        # Return CRISPR sequences and information once done
+        if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence, return CRISPR sequences found
+            foreach my $crispr (keys %CRISPRS) {
+                push @CRPseqs, $crispr . $CRISPRS{$crispr}{"PAM"}; #join oligo + PAM sequence -> push to array
+            }
+            return(\%CRISPRS, \@CRPseqs);
+        };
+
         my $kmer = ($windowSize - 3); #kmer is the string of base pairs before NGG
 
         if ($window =~ /(.+)(.GG)$/) {
