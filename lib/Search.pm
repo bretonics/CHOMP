@@ -81,13 +81,13 @@ sub findOligo {
         my $window = substr $sequence, $i, $windowSize;
 
         # Return CRISPR sequences and information once done
-        if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence, return CRISPR sequences found
+        if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence
             foreach my $name (keys %CRISPRS) {
                 my $crispr = $CRISPRS{$name}{"oligo"} . $CRISPRS{$name}{"PAM"}; #join oligo + PAM sequence
                 $CRISPRS{$name}{"sequence"} = $crispr; #add CRISPR sequence (oligo + PAM) to each hash
                 push @CRPseqs, $crispr #push to array
             }
-            # Return references of HoH containing all CRISPR instances found and respective information for each and array with just the sequences joined (kmer oligo + PAM)
+            # Return references of HoH containing all CRISPR instances found and respective information for each and array with the full CRISPR sequences joined (kmer oligo + PAM)
             return(\%CRISPRS, \@CRPseqs);
         };
 

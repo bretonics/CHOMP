@@ -71,12 +71,13 @@ my ($fileName)  = $SEQ =~ /(\w+)\b\./; #extract file name for output file name
 #-------------------------------------------------------------------------------
 # CALLS
 my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
-my $CRPfile = writeCRPfasta($CRISPRS, $OUTDIR, $fileName); #CRISPRs FASTA file
+my $CRPfile = writeCRPfasta($CRISPRS, $fileName); #Write CRISPRs FASTA file
 my $targets = Search::blast($CRPfile, $SEQ, $WINDOWSIZE); #CRISPR target hits
-# writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
+writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
+
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = checks();
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -107,25 +108,34 @@ sub writeCRPfile {
     @_ == 5 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $targets, $down, $up, $file) = @_;
+    my %CRISPRS = %$CRISPRS;
+    my %targets = %$targets;
+    my $num = keys %CRISPRS; #number of CRISPR sequences
 
-    while ( my ($id, $value) = each(%$targets) ) { #get key-value pair. Value is anonymous array ref of hash(es)
-        my $numMatches = @$value; #number of hashes == number of matches for same CRISPR sequence
-        # say $down . . $up; next;
-        my $FH = getFH(">>", $file);
-        while (<$FH>) {
-            foreach my $hashRef (@$value) { #each hash is a different match for same CRISPR sequence
-                my (%hash) = %$hashRef;
+    my $FH = getFH(">", "$OUTDIR/$OUTFILE");
+    say $FH "Name\tSequence\tOccurence";
 
-                # say "Crispr is: $id, Hash is: ", $hashRef;
-            }
-        }
+    # Get ordered CRISPR sequences + info to print
+    for (my $i = 0; $i < $num; $i++) {
+        my $name = "CRISPR_" . $i;
+        my $crispr = $CRISPRS{$name}{'oligo'} . $CRISPRS{$name}{'PAM'};
+        # Complete oligo sequence:
+        # + DOWN flanking target region
+        # + CRISPR sequence
+        # + UP flanking target region
+        my $sequence = $down . $crispr . $up;
+
+        # CRISPR sequence target matches from BLAST call
+        my ($matches) = $targets{$name};
+        my $numMatches = @$matches; #number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
+        say $FH "$name\t$sequence\t$numMatches"; #pring to file
     }
-
+    say "CRISPRs file written to './$OUTDIR/$OUTFILE'";
+    return;
 }
 #-------------------------------------------------------------------------------
 # HELPERS
 
-# ***************** MOVE TO MODULE AS HELPER SUB FOR BLAST
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ($CRISPRS, $OUTDIR, $fileName);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -136,10 +146,10 @@ sub writeCRPfile {
 # $return = ($outFile);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub writeCRPfasta {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($CRISPRS, $OUTDIR, $fileName)';
-    @_ == 3 or die wrongNumberArguments(), $filledUsage;
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($CRISPRS, $fileName)';
+    @_ == 2 or die wrongNumberArguments(), $filledUsage;
 
-    my ($CRISPRS, $OUTDIR, $fileName) = @_;
+    my ($CRISPRS, $fileName) = @_;
     my $outFile = "$OUTDIR\/$fileName.fasta";
     my $FH = getFH(">", $outFile);
     my $count = 0;
