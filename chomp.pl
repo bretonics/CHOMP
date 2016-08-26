@@ -95,14 +95,15 @@ sub checks {
     }
 }
 
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ();
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# This function takes 1 argument;
-#
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $output = File containing CRISPR target information
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 5 arguments; CRISPR HoH, BLAST target HoA containing matches
+# throughout the sequence, the down/up stream sequences to append to crispr
+# sequences, and the output file name
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $output = File containing CRISPR target sequences and relative information
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub writeCRPfile {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DW_STREAM, $UP_STREAM, $OUTFILE)';
     @_ == 5 or die wrongNumberArguments(), $filledUsage;
@@ -136,15 +137,15 @@ sub writeCRPfile {
 #-------------------------------------------------------------------------------
 # HELPERS
 
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ($CRISPRS, $OUTDIR, $fileName);
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes 3 arguments; HoH reference of CRISPR oligos,
 # the output diretory, and the output file name. Writes each CRISPR
 # target found in FASTA and returns file location.
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = ($outFile);
-#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub writeCRPfasta {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '($CRISPRS, $fileName)';
     @_ == 2 or die wrongNumberArguments(), $filledUsage;
