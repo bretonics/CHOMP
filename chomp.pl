@@ -28,8 +28,8 @@ use Data::Dumper;
 
 #-------------------------------------------------------------------------------
 # USER VARIABLES
-Readonly my $DW_STREAM => "DOWNDOWN";
-Readonly my $UP_STREAM => "UPUPUP";
+my $DOWNSEQ;
+my $UPSEQ;
 
 #-------------------------------------------------------------------------------
 # COMMAND LINE
@@ -39,6 +39,8 @@ my $OUTFILE;
 my $USAGE       = "\n\n$0 [options]\n
 Options:
     -seq                Sequence file to search
+    -down               Down sequence to append
+    -up                 Up sequence to append
     -window             Window size for CRISPR oligo (default = 23)
     -out                Out file name
     -help               Shows this message
@@ -47,6 +49,8 @@ Options:
 # OPTIONS
 GetOptions(
     'seq=s'             =>\$SEQ,
+    'down:s'            =>\$DOWNSEQ,
+    'up:s'              =>\$UPSEQ,
     'window:i'          =>\$WINDOWSIZE,
     'out=s'             =>\$OUTFILE,
     help                =>sub{pod2usage($USAGE);}
@@ -73,7 +77,7 @@ my ($fileName)  = $SEQ =~ /(\w+)\b\./; #extract file name for output file name
 my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
 my $CRPfile = writeCRPfasta($CRISPRS, $fileName); #Write CRISPRs FASTA file
 my $targets = Search::blast($CRPfile, $SEQ, $WINDOWSIZE); #CRISPR target hits
-writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
+writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
@@ -88,10 +92,16 @@ writeCRPfile($CRISPRS, $targets, $DW_STREAM, $UP_STREAM, $OUTFILE);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     unless ($SEQ){
-        die "\nDid not provide an input file, -seq <infile>", $USAGE;
+        die "Did not provide an input file, -seq <infile>", $USAGE;
+    }
+    unless ($DOWNSEQ){
+        say "Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>";
+    }
+    unless ($UPSEQ){
+        say "Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>";
     }
     unless ($OUTFILE){
-        die "\nDid not provide an output file, -out <outfile>", $USAGE;
+        die "Did not provide an output file, -out <outfile>", $USAGE;
     }
 }
 
@@ -105,7 +115,7 @@ sub checks {
 # $output = File containing CRISPR target sequences and relative information
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub writeCRPfile {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DW_STREAM, $UP_STREAM, $OUTFILE)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DOWNSEQ, $UPSEQ, $OUTFILE)';
     @_ == 5 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $targets, $down, $up, $file) = @_;
@@ -124,7 +134,17 @@ sub writeCRPfile {
         # + DOWN flanking target region
         # + CRISPR sequence
         # + UP flanking target region
-        my $sequence = $down . $crispr . $up;
+        my $sequence;
+        if (!$down and !$up) {
+            $sequence = $crispr;
+        } elsif ($down and !$up) {
+            $sequence = $down . $crispr;
+        } elsif (!$down and $up) {
+            $sequence = $crispr . $up;
+        } else {
+            $sequence = $down . $crispr . $up;
+        }
+
 
         # CRISPR sequence target matches from BLAST call
         my ($matches) = $targets{$name};
