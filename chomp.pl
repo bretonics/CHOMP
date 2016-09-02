@@ -77,7 +77,7 @@ my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and seq
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); #Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE, $HTML); #CRISPR target hits
 
-writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $OUTFILE);
+writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
@@ -141,22 +141,23 @@ sub setParameters {
 # $output = File containing CRISPR target sequences and relative information
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub writeCRPfile {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DOWNSEQ, $UPSEQ, $OUTFILE)';
-    @_ == 5 or die wrongNumberArguments(), $filledUsage;
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE)';
+    @_ == 6 or die wrongNumberArguments(), $filledUsage;
 
-    my ($CRISPRS, $targets, $down, $up, $file) = @_;
+    my ($CRISPRS, $targets, $down, $up, $window, $file) = @_;
     my %CRISPRS = %$CRISPRS;
     my %targets = %$targets;
     my $num = keys %CRISPRS; #number of CRISPR sequences
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
-    say $FH "Name\tSequence\tOccurence";
+    say $FH "Name\tSequence\tOccurences\tIdentities(Length:Matches)";
 
     # Get ordered CRISPR sequences + info to print
     for (my $i = 0; $i < $num; $i++) {
         my $name = "CRISPR_" . $i;
         my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'};
+
         # Complete oligo sequence:
         # + DOWN flanking target region
         # + CRISPR sequence
@@ -176,9 +177,19 @@ sub writeCRPfile {
         # CRISPR sequence target matches from BLAST call
         my ($matches) = $targets{$name};
         my $numMatches = @$matches; #number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
-        say $FH "$name\t$sequence\t$numMatches"; #pring to file
+
+        # Get all percent identities (pident) for each CRISPR match and report
+        # how many sequence hits + nucleotide matches for each hit
+        my $identities = '';
+        foreach my $hash (@$matches) {
+            my $pident = $hash->{'pident'}; chomp $pident;
+            my $tmp = "$window:$pident";
+            $identities = "$identities $tmp,";
+        }
+        say $FH "$name\t$sequence\t$numMatches\t$identities"; #print to file
     }
     say "CRISPRs file written to './$outFile'";
+
     return;
 }
 #-------------------------------------------------------------------------------
