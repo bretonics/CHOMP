@@ -135,7 +135,7 @@ sub findOligo {
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $SEQ, $WINDOWSIZE)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $seqFile, $WINDOWSIZE)';
     @_ == 3 or confess wrongNumberArguments(), $filledUsage;
 
     my ($CRPfile, $seqFile, $wordSize) = @_;
