@@ -140,10 +140,12 @@ sub blast {
 
     my ($CRPfile, $seqFile, $wordSize, $HTML) = @_;
     my (%targets, $info);
-    $wordSize = sprintf "%.0f", ($wordSize/2); #Make wordSize == 1/2 of WINDOWSIZE when searching BLAST hits
-    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size 7 -outfmt \"6 qseqid qseqid qstart qend sstart send sstrand pident nident\""; #use 'blastn-short' settings for sequences shorter than 30 nucleotides
-    my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $seqFile -word_size 7 -out blast.html -html";
-    exec($BLASTCMD_HTML) if($HTML);
+    $wordSize = 7;
+    # $wordSize = sprintf "%.0f", ($wordSize/2); #Make wordSize == 1/2 of WINDOWSIZE when searching BLAST hits
+
+    # Use 'blastn-short' settings for sequences shorter than 30 nucleotides
+    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -outfmt \"6 qseqid qseqid qstart qend sstart send sstrand pident nident\"";
+    my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -out blast.html -html";
 
     open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
     while ( my $blastResult = <BLAST> ) {
@@ -169,6 +171,8 @@ sub blast {
         # -- Hash contains BLAST match info
         push @{ $targets{$crispr} } , $info;
     } close BLAST;
+
+    exec($BLASTCMD_HTML) if($HTML);
 
     return(\%targets);
 }
