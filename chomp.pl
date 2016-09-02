@@ -34,6 +34,7 @@ my $DOWNSEQ;
 my $UPSEQ;
 my $WINDOWSIZE  = 23;
 my $OUTFILE;
+my $HTML; #FALSE
 
 my $USAGE       = "\n\n$0 [options]\n
 Options:
@@ -43,6 +44,7 @@ Options:
     -up                 Up sequence to append
     -window             Window size for CRISPR oligo (default = 23)
     -out                Out file name
+    -html               Print HTML BLAST results
     -help               Shows this message
 \n";
 
@@ -54,6 +56,7 @@ GetOptions(
     'up:s'              =>\$UPSEQ,
     'window:i'          =>\$WINDOWSIZE,
     'out=s'             =>\$OUTFILE,
+    'html!'             =>\$HTML,
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
 
@@ -72,7 +75,7 @@ my $SEQFILE; #sequence file to use in BLAST search
 # CALLS
 my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); #Write CRISPRs FASTA file
-my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE); #CRISPR target hits
+my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE, $HTML); #CRISPR target hits
 
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $OUTFILE);
 
