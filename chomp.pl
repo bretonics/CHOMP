@@ -67,7 +67,7 @@ checks(); #check CL arguments
 my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
 my $REALBIN = "$FindBin::RealBin";
-my $OUTDIR  = mkDir("crisprs");
+my $OUTDIR  = mkDir("CRISPRS");
 
 my ($seqInObj, $format, $seqObj, $sequence) = setParameters();
 my $SEQFILE; #sequence file to use in BLAST search
