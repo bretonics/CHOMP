@@ -73,6 +73,7 @@ my $SEQFILE; #sequence file to use in BLAST search
 my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); #Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE); #CRISPR target hits
+
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -152,7 +153,7 @@ sub writeCRPfile {
     # Get ordered CRISPR sequences + info to print
     for (my $i = 0; $i < $num; $i++) {
         my $name = "CRISPR_" . $i;
-        my $crispr = $CRISPRS{$name}{'oligo'} . $CRISPRS{$name}{'PAM'};
+        my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'};
         # Complete oligo sequence:
         # + DOWN flanking target region
         # + CRISPR sequence
@@ -222,9 +223,9 @@ sub writeCRPfasta {
     my $count = 0;
 
     foreach my $crispr (keys %$CRISPRS) {
-        my $oligo = $CRISPRS->{$crispr}->{"oligo"};
+        my $gRNA = $CRISPRS->{$crispr}->{"gRNA"};
         my $PAM = $CRISPRS->{$crispr}->{"PAM"};
-        $crispr = $oligo . $PAM ; #join oligo + PAM sequence
+        $crispr = $gRNA . $PAM ; #join gRNA + PAM sequence
         say $FH ">CRISPR_$count\n$crispr";
         $count++;
     } close $FH;

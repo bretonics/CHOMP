@@ -74,7 +74,7 @@ sub findOligo {
     my ($sequence, $windowSize) = @_;
     my $seqLen = length($sequence);
 
-    my (%CRISPRS, @CRPseqs, $oligo, $PAM, $content, $contentG, $contentC, $GC);
+    my (%CRISPRS, @CRPseqs, $gRNA, $PAM, $content, $contentG, $contentC, $GC);
     my $instance = 0; #track CRISPR count
 
     for (my $i = 0; $i < $seqLen; $i++) {
@@ -83,18 +83,18 @@ sub findOligo {
         # Return CRISPR sequences and information once done
         if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence
             foreach my $name (keys %CRISPRS) {
-                my $crispr = $CRISPRS{$name}{"oligo"} . $CRISPRS{$name}{"PAM"}; #join oligo + PAM sequence
-                $CRISPRS{$name}{"sequence"} = $crispr; #add CRISPR sequence (oligo + PAM) to each hash
+                my $crispr = $CRISPRS{$name}{"gRNA"} . $CRISPRS{$name}{"PAM"}; #join gRNA + PAM sequence
+                $CRISPRS{$name}{"sequence"} = $crispr; #add CRISPR sequence (gRNA + PAM) to each hash
                 push @CRPseqs, $crispr #push to array
             }
-            # Return references of HoH containing all CRISPR instances found and respective information for each and array with the full CRISPR sequences joined (kmer oligo + PAM)
+            # Return references of HoH containing all CRISPR instances found and respective information for each and array with the full CRISPR sequences joined (kmer gRNA + PAM)
             return(\%CRISPRS, \@CRPseqs);
         };
 
         my $kmer = ($windowSize - 3); #kmer is the string of base pairs before NGG
 
         if ($window =~ /(.+)(.GG)$/) {
-            ($oligo, $PAM) = ($1, $2); #get first 'kmer' number of nucleotides in oligo + PAM (NGG)
+            ($gRNA, $PAM) = ($1, $2); #get first 'kmer' number of nucleotides in gRNA + PAM (NGG)
             my $name = "CRISPR_$instance"; $instance++;
 
             # GC Content
@@ -103,8 +103,8 @@ sub findOligo {
             $GC = ($contentG + $contentC)/$windowSize;
 
             # Store CRISPR oligomers and info in Hash of Hashes
-            $content = { #anonymous hash of relevant oligo content
-                'oligo' => $oligo,
+            $content = { #anonymous hash of relevant gRNA content
+                'gRNA' => $gRNA,
                 'PAM'   => $PAM,
                 'G'     => $contentG,
                 'C'     => $contentC,
