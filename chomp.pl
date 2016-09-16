@@ -12,7 +12,6 @@ use Search;
 
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers; use Databases;
-use Bioinformatics::Eutil;
 
 # ==============================================================================
 #
