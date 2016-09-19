@@ -144,9 +144,8 @@ sub writeCRPfile {
     @_ == 6 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $targets, $down, $up, $window, $file) = @_;
-    my %CRISPRS = %$CRISPRS;
     my %targets = %$targets;
-    my $num = keys %CRISPRS; #number of CRISPR sequences
+    my $num = keys %$CRISPRS; #number of CRISPR sequences
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
@@ -154,8 +153,8 @@ sub writeCRPfile {
 
     # Get ordered CRISPR sequences + info to print
     for (my $i = 0; $i < $num; $i++) {
-        my $name = "CRISPR_" . $i;
-        my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'};
+        my $name = "CRISPR_$i";
+        my $crispr = $CRISPRS->{$name}->{'sequence'};
 
         # Complete oligo sequence:
         # + DOWN flanking target region
@@ -181,8 +180,8 @@ sub writeCRPfile {
         # how many sequence hits + nucleotide matches for each hit
         my $identities = '';
         foreach my $hash (@$matches) {
-            my $pident = $hash->{'pident'}; chomp $pident;
-            my $tmp = "$window:$pident";
+            my $nident = $hash->{'nident'}; chomp $nident;
+            my $tmp = "$window:$nident";
             $identities = "$identities $tmp,";
         }
         say $FH "$name\t$sequence\t$numMatches\t$identities"; #print to file
@@ -231,16 +230,14 @@ sub writeCRPfasta {
     @_ == 2 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $OUTFILE) = @_;
-    my $outFile = "$OUTDIR\/$OUTFILE.fasta";
+    my $outFile = "$OUTDIR/$OUTFILE.fasta";
     my $FH = getFH(">", $outFile);
-    my $count = 0;
+    my $num = keys %$CRISPRS; #number of CRISPR sequences
 
-    foreach my $crispr (keys %$CRISPRS) {
-        my $gRNA = $CRISPRS->{$crispr}->{"gRNA"};
-        my $PAM = $CRISPRS->{$crispr}->{"PAM"};
-        $crispr = $gRNA . $PAM ; #join gRNA + PAM sequence
-        say $FH ">CRISPR_$count\n$crispr";
-        $count++;
+    for (my $i = 0; $i < $num; $i++) {
+        my $crispr = "CRISPR_$i";
+        my $sequence = $CRISPRS->{$crispr}->{'sequence'};
+        say $FH ">$crispr\n$sequence";
     } close $FH;
 
     return $outFile;
