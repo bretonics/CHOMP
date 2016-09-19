@@ -149,7 +149,7 @@ sub writeCRPfile {
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
-    say $FH "Name\tSequence\tOccurences\tIdentities(Length:Matches)";
+    say $FH "Name\tSequence\tOccurrences\tIdentities(Matches:Length)";
 
     # Get ordered CRISPR sequences + info to print
     for (my $i = 0; $i < $num; $i++) {
@@ -181,8 +181,8 @@ sub writeCRPfile {
         my $identities = '';
         foreach my $hash (@$matches) {
             my $nident = $hash->{'nident'}; chomp $nident;
-            my $tmp = "$window:$nident";
-            $identities = "$identities $tmp,";
+            my $tmp = "$nident:$window";
+            $identities = "$identities$tmp,";
         }
         say $FH "$name\t$sequence\t$numMatches\t$identities"; #print to file
     }
