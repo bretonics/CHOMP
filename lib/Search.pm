@@ -144,7 +144,7 @@ sub blast {
     # $wordSize = sprintf "%.0f", ($wordSize/2); #Make wordSize == 1/2 of WINDOWSIZE when searching BLAST hits
 
     # Use 'blastn-short' settings for sequences shorter than 30 nucleotides
-    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -outfmt \"6 qseqid qseqid qstart qend sstart send sstrand pident nident\"";
+    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -outfmt \"6 qseqid sseqid qstart qend sstart send sstrand pident nident\"";
 
     open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
     while ( my $blastResult = <BLAST> ) {
@@ -155,7 +155,7 @@ sub blast {
         my $crispr = $result[0]; #CRISPR sequence name ex.) 'CRISPR_0'
 
         $info = { #anonymous hash with BLAST info for each match
-            'qseqid'    => $result[1],
+            'sseqid'    => $result[1],
             'qstart'    => $result[2],
             'qend'      => $result[3],
             'sstart'    => $result[4],
