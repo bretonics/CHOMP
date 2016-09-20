@@ -65,17 +65,16 @@ checks(); #check CL arguments
 # VARIABLES
 my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
-my $REALBIN = "$FindBin::RealBin";
-my $OUTDIR  = mkDir("CRISPRS");
+my $REALBIN = $FindBin::RealBin;
+my $OUTDIR  = mkDir('CRISPRS');
 
-my ($seqInObj, $format, $seqObj, $sequence) = setParameters();
+my ($sequence, $revSeq) = setParameters();
 my $SEQFILE; #sequence file to use in BLAST search
 #-------------------------------------------------------------------------------
 # CALLS
 my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); #Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE, $HTML); #CRISPR target hits
-
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -91,19 +90,17 @@ writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 sub checks {
     # Command line arguments passed
     unless ($SEQ){
-        die "Did not provide an input file, -seq <infile>", $USAGE;
+        die 'Did not provide an input file, -seq <infile>', $USAGE;
     }
     unless ($DOWNSEQ){
-        say "Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>";
+        say 'Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>';
     }
     unless ($UPSEQ){
-        say "Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>";
+        say 'Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>';
     }
     unless ($OUTFILE){
-        die "Did not provide an output file, -out <outfile>", $USAGE;
+        die 'Did not provide an output file, -out <outfile>', $USAGE;
     }
-
-    setParameters();
 
     return;
 }
@@ -124,7 +121,7 @@ sub setParameters {
     } elsif ($SEQ) {
         $SEQFILE = $SEQ;
     } else {
-        die "Could not determine wich file to use as search sequence."
+        die 'Could not determine wich file to use as search sequence.'
     }
 
     return( getSequence($SEQFILE) );
@@ -149,7 +146,7 @@ sub writeCRPfile {
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
-    say $FH "Name\tSequence\tStrand\tReverse\tOccurrences\tIdentities";
+    say $FH "Name\tSequence\tSubjStart\tOccurrences\tIdentities";
 
 
     my ($sortedCRISPRS, $occurrences) = sortOccurrences(\%targets);
@@ -174,17 +171,11 @@ sub writeCRPfile {
         }
 
         # Get all details to print to file
-        my $revSeq = reverse($sequence);
         my $occurrence = $occurrences->{$name};
-        my $crispr = $targets{$name}; #Array of Hashes for given CRISPR sequence name
+        my $crispr = $targets{$name}; # Array of Hashes for given CRISPR sequence name
         my $identities = sortIdentities( $crispr );
-        my $strand;
-        foreach my $hash (@$crispr) {
-            my $nident = $hash->{'nident'}; chomp $nident;
-            my $tmp = $nident;
-            $strand = $hash->{'sstrand'};
-        }
-        say $FH "$name\t$sequence\t$strand\t$revSeq\t$occurrence\t$identities"; #print to file
+        my $sStart = @{ $targets{$name} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+        say $FH "$name\t$sequence\t$sStart\t$occurrence\t$identities"; # print to file
     }
     say "CRISPRs file written to $outFile";
 
@@ -212,8 +203,9 @@ sub getSequence {
     my $format      = $seqInObj->_guess_format($seqFile); #check format of input file
     my $seqObj      = $seqInObj->next_seq;
     my $sequence    = $seqObj->seq;
+    my $revSeq      = $seqObj->revcom->seq;
 
-    return($seqInObj, $format, $seqObj, $sequence);
+    return($sequence, $revSeq);
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
