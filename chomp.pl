@@ -149,43 +149,42 @@ sub writeCRPfile {
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
-    say $FH "Name\tSequence\tOccurrences\tIdentities(Matches:Length)";
+    say $FH "Name\tSequence\tStrand\tReverse\tOccurrences\tIdentities";
+
+
+    my ($sortedCRISPRS, $occurrences) = sortOccurrences(\%targets);
+    my @sortedCRISPRS = @$sortedCRISPRS;
 
     # Get ordered CRISPR sequences + info to print
-    for (my $i = 0; $i < $num; $i++) {
-        my $name = "CRISPR_$i";
-        my $crispr = $CRISPRS->{$name}->{'sequence'};
+    foreach my $name (@sortedCRISPRS) {
+        my $sequence = $CRISPRS->{$name}->{'sequence'};
 
         # Complete oligo sequence:
         # + DOWN flanking target region
         # + CRISPR sequence
         # + UP flanking target region
-        my $sequence;
         if (!$down and !$up) {
-            $sequence = $crispr;
+            $sequence = $sequence;
         } elsif ($down and !$up) {
-            $sequence = $down . $crispr;
+            $sequence = $down . $sequence;
         } elsif (!$down and $up) {
-            $sequence = $crispr . $up;
+            $sequence = $sequence . $up;
         } else {
-            $sequence = $down . $crispr . $up;
+            $sequence = $down . $sequence . $up;
         }
 
-
-        # CRISPR sequence target matches from BLAST call
-        my ($matches) = $targets{$name}; # $targets == (Hash of Array of Hashes)
-        my $occurrence = @$matches; # number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
-
-        # Get all percent identities (nident) for each CRISPR match and report
-        # how many sequence hits + nucleotide matches for each hit
-        my $identities = sortIdentities($matches);
+        # Get all details to print to file
+        my $revSeq = reverse($sequence);
+        my $occurrence = $occurrences->{$name};
+        my $crispr = $targets{$name}; #Array of Hashes for given CRISPR sequence name
+        my $identities = sortIdentities( $crispr );
         my $strand;
-        foreach my $hash (@$matches) {
+        foreach my $hash (@$crispr) {
             my $nident = $hash->{'nident'}; chomp $nident;
             my $tmp = $nident;
             $strand = $hash->{'sstrand'};
         }
-        say $FH "$name\t$sequence\t$strand\t$occurrence\t$identities"; #print to file
+        say $FH "$name\t$sequence\t$strand\t$revSeq\t$occurrence\t$identities"; #print to file
     }
     say "CRISPRs file written to $outFile";
 
@@ -245,15 +244,49 @@ sub writeCRPfasta {
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $input = ($matchesArrayRef);
+# $input = ($targetsRef);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# This function takes 1 argument: the matches array reference
-# containing all matches for same CRISPR sequence
+# This function takes 1 arguments: $target hash of array of hashes
+# references returned from Search::blast. Returns a numerically
+# ordered array of CRISPR sequence names based on number of
+# occurrence and hash with name->occurrence pairing.
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = ( \@sortedCRISPRS, \%occurrences );
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub sortOccurrences {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targetsRef)';
+    @_ == 1 or die wrongNumberArguments(), $filledUsage;
+
+    my ($targetsRef) = @_;
+    my %targets = %$targetsRef;
+    my %occurrences;
+    my @sortedCRISPRS;
+    # Get number of occurrences per CRISPR target in %targets Hash of Array of Hashes
+    # -- Hash key == CRISRP name
+    # -- Array accounts for multiple hits for each CRISPR sequence
+    # -- Hash contains BLAST match info
+    foreach my $name (keys %targets) {
+        # CRISPR sequence target matches from BLAST call
+        my ($matches) = $targets{$name}; # $targets == (Hash of Array of Hashes)
+        # Number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
+        $occurrences{$name} = @$matches; # store number of occcurrences per CRISPR
+    }
+
+    # Return sorted CRISPR names based on number of occurrences + occurrences
+    @sortedCRISPRS = ( sort { $occurrences{$a} <=> $occurrences{$b} } keys %occurrences );
+    return (\@sortedCRISPRS, \%occurrences);
+}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($targets{$name});
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 argument: an array reference containing
+# all CRISPR matches for a given CRISPR sequence name
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = sorted identities descending numerically
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub sortIdentities {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($matchesArrayRef)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets{$name})';
     @_ == 1 or die wrongNumberArguments(), $filledUsage;
 
     my ($matches) = @_;
