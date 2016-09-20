@@ -173,20 +173,21 @@ sub writeCRPfile {
 
 
         # CRISPR sequence target matches from BLAST call
-        my ($matches) = $targets{$name};
-        my $numMatches = @$matches; #number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
+        my ($matches) = $targets{$name}; # $targets == (Hash of Array of Hashes)
+        my $occurrence = @$matches; # number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
 
-        # Get all percent identities (pident) for each CRISPR match and report
+        # Get all percent identities (nident) for each CRISPR match and report
         # how many sequence hits + nucleotide matches for each hit
-        my $identities = '';
+        my $identities = sortIdentities($matches);
+        my $strand;
         foreach my $hash (@$matches) {
             my $nident = $hash->{'nident'}; chomp $nident;
-            my $tmp = "$nident:$window";
-            $identities = "$identities$tmp,";
+            my $tmp = $nident;
+            $strand = $hash->{'sstrand'};
         }
-        say $FH "$name\t$sequence\t$numMatches\t$identities"; #print to file
+        say $FH "$name\t$sequence\t$strand\t$occurrence\t$identities"; #print to file
     }
-    say "CRISPRs file written to './$outFile'";
+    say "CRISPRs file written to $outFile";
 
     return;
 }
@@ -241,4 +242,27 @@ sub writeCRPfasta {
     } close $FH;
 
     return $outFile;
+}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($matchesArrayRef);
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 argument: the matches array reference
+# containing all matches for same CRISPR sequence
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = sorted identities descending numerically
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub sortIdentities {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($matchesArrayRef)';
+    @_ == 1 or die wrongNumberArguments(), $filledUsage;
+
+    my ($matches) = @_;
+    my @matches = @$matches;
+    my @identities;
+    foreach my $hash (@matches) {
+        my $nident = $hash->{'nident'}; chomp($nident);
+        push @identities, $nident;
+    }
+    @identities = ( sort {$b <=> $a} @identities ); # sort descending numerically
+    return join(",", @identities); # return sorted identity hits
 }
