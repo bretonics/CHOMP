@@ -65,17 +65,16 @@ checks(); #check CL arguments
 # VARIABLES
 my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
-my $REALBIN = "$FindBin::RealBin";
-my $OUTDIR  = mkDir("CRISPRS");
+my $REALBIN = $FindBin::RealBin;
+my $OUTDIR  = mkDir('CRISPRS');
 
-my ($seqInObj, $format, $seqObj, $sequence) = setParameters();
+my ($sequence, $revSeq) = setParameters();
 my $SEQFILE; #sequence file to use in BLAST search
 #-------------------------------------------------------------------------------
 # CALLS
 my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); #Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE, $HTML); #CRISPR target hits
-
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -91,19 +90,17 @@ writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 sub checks {
     # Command line arguments passed
     unless ($SEQ){
-        die "Did not provide an input file, -seq <infile>", $USAGE;
+        die 'Did not provide an input file, -seq <infile>', $USAGE;
     }
     unless ($DOWNSEQ){
-        say "Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>";
+        say 'Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>';
     }
     unless ($UPSEQ){
-        say "Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>";
+        say 'Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>';
     }
     unless ($OUTFILE){
-        die "Did not provide an output file, -out <outfile>", $USAGE;
+        die 'Did not provide an output file, -out <outfile>', $USAGE;
     }
-
-    setParameters();
 
     return;
 }
@@ -124,7 +121,7 @@ sub setParameters {
     } elsif ($SEQ) {
         $SEQFILE = $SEQ;
     } else {
-        die "Could not determine wich file to use as search sequence."
+        die 'Could not determine wich file to use as search sequence.'
     }
 
     return( getSequence($SEQFILE) );
@@ -144,50 +141,43 @@ sub writeCRPfile {
     @_ == 6 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $targets, $down, $up, $window, $file) = @_;
-    my %CRISPRS = %$CRISPRS;
     my %targets = %$targets;
-    my $num = keys %CRISPRS; #number of CRISPR sequences
+    my $num = keys %$CRISPRS; #number of CRISPR sequences
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
-    say $FH "Name\tSequence\tOccurences\tIdentities(Length:Matches)";
+    say $FH "Name\tSequence\tSubjStart\tOccurrences\tIdentities";
+
+
+    my ($sortedCRISPRS, $occurrences) = sortOccurrences(\%targets);
+    my @sortedCRISPRS = @$sortedCRISPRS;
 
     # Get ordered CRISPR sequences + info to print
-    for (my $i = 0; $i < $num; $i++) {
-        my $name = "CRISPR_" . $i;
-        my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'};
+    foreach my $name (@sortedCRISPRS) {
+        my $sequence = $CRISPRS->{$name}->{'sequence'};
 
         # Complete oligo sequence:
         # + DOWN flanking target region
         # + CRISPR sequence
         # + UP flanking target region
-        my $sequence;
         if (!$down and !$up) {
-            $sequence = $crispr;
+            $sequence = $sequence;
         } elsif ($down and !$up) {
-            $sequence = $down . $crispr;
+            $sequence = $down . $sequence;
         } elsif (!$down and $up) {
-            $sequence = $crispr . $up;
+            $sequence = $sequence . $up;
         } else {
-            $sequence = $down . $crispr . $up;
+            $sequence = $down . $sequence . $up;
         }
 
-
-        # CRISPR sequence target matches from BLAST call
-        my ($matches) = $targets{$name};
-        my $numMatches = @$matches; #number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
-
-        # Get all percent identities (pident) for each CRISPR match and report
-        # how many sequence hits + nucleotide matches for each hit
-        my $identities = '';
-        foreach my $hash (@$matches) {
-            my $pident = $hash->{'pident'}; chomp $pident;
-            my $tmp = "$window:$pident";
-            $identities = "$identities $tmp,";
-        }
-        say $FH "$name\t$sequence\t$numMatches\t$identities"; #print to file
+        # Get all details to print to file
+        my $occurrence = $occurrences->{$name};
+        my $crispr = $targets{$name}; # Array of Hashes for given CRISPR sequence name
+        my $identities = sortIdentities( $crispr );
+        my $sStart = @{ $targets{$name} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+        say $FH "$name\t$sequence\t$sStart\t$occurrence\t$identities"; # print to file
     }
-    say "CRISPRs file written to './$outFile'";
+    say "CRISPRs file written to $outFile";
 
     return;
 }
@@ -213,8 +203,9 @@ sub getSequence {
     my $format      = $seqInObj->_guess_format($seqFile); #check format of input file
     my $seqObj      = $seqInObj->next_seq;
     my $sequence    = $seqObj->seq;
+    my $revSeq      = $seqObj->revcom->seq;
 
-    return($seqInObj, $format, $seqObj, $sequence);
+    return($sequence, $revSeq);
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -231,17 +222,72 @@ sub writeCRPfasta {
     @_ == 2 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $OUTFILE) = @_;
-    my $outFile = "$OUTDIR\/$OUTFILE.fasta";
+    my $outFile = "$OUTDIR/$OUTFILE.fasta";
     my $FH = getFH(">", $outFile);
-    my $count = 0;
+    my $num = keys %$CRISPRS; #number of CRISPR sequences
 
-    foreach my $crispr (keys %$CRISPRS) {
-        my $gRNA = $CRISPRS->{$crispr}->{"gRNA"};
-        my $PAM = $CRISPRS->{$crispr}->{"PAM"};
-        $crispr = $gRNA . $PAM ; #join gRNA + PAM sequence
-        say $FH ">CRISPR_$count\n$crispr";
-        $count++;
+    for (my $i = 0; $i < $num; $i++) {
+        my $crispr = "CRISPR_$i";
+        my $sequence = $CRISPRS->{$crispr}->{'sequence'};
+        say $FH ">$crispr\n$sequence";
     } close $FH;
 
     return $outFile;
+}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($targetsRef);
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 arguments: $target hash of array of hashes
+# references returned from Search::blast. Returns a numerically
+# ordered array of CRISPR sequence names based on number of
+# occurrence and hash with name->occurrence pairing.
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = ( \@sortedCRISPRS, \%occurrences );
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub sortOccurrences {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targetsRef)';
+    @_ == 1 or die wrongNumberArguments(), $filledUsage;
+
+    my ($targetsRef) = @_;
+    my %targets = %$targetsRef;
+    my %occurrences;
+    my @sortedCRISPRS;
+    # Get number of occurrences per CRISPR target in %targets Hash of Array of Hashes
+    # -- Hash key == CRISRP name
+    # -- Array accounts for multiple hits for each CRISPR sequence
+    # -- Hash contains BLAST match info
+    foreach my $name (keys %targets) {
+        # CRISPR sequence target matches from BLAST call
+        my ($matches) = $targets{$name}; # $targets == (Hash of Array of Hashes)
+        # Number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
+        $occurrences{$name} = @$matches; # store number of occcurrences per CRISPR
+    }
+
+    # Return sorted CRISPR names based on number of occurrences + occurrences
+    @sortedCRISPRS = ( sort { $occurrences{$a} <=> $occurrences{$b} } keys %occurrences );
+    return (\@sortedCRISPRS, \%occurrences);
+}
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($targets{$name});
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 argument: an array reference containing
+# all CRISPR matches for a given CRISPR sequence name
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = sorted identities descending numerically
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+sub sortIdentities {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets{$name})';
+    @_ == 1 or die wrongNumberArguments(), $filledUsage;
+
+    my ($matches) = @_;
+    my @matches = @$matches;
+    my @identities;
+    foreach my $hash (@matches) {
+        my $nident = $hash->{'nident'}; chomp($nident);
+        push @identities, $nident;
+    }
+    @identities = ( sort {$b <=> $a} @identities ); # sort descending numerically
+    return join(",", @identities); # return sorted identity hits
 }
