@@ -68,13 +68,14 @@ my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 my $REALBIN = $FindBin::RealBin;
 my $OUTDIR  = mkDir('CRISPRS');
 
-my ($sequence, $revSeq) = setParameters();
-my $SEQFILE; #sequence file to use in BLAST search
+my ($seqInfo)    = getSequences($SEQ);
+my $SUBJSEQ; # sequence file to use in BLAST search
+
 #-------------------------------------------------------------------------------
 # CALLS
-my ($CRISPRS, $CRPseqs) = findOligo($sequence, $WINDOWSIZE); #CRISPR HoH and sequences array references
-my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); #Write CRISPRs FASTA file
-my $targets             = Search::blast($CRPfile, $SEQFILE, $WINDOWSIZE, $HTML); #CRISPR target hits
+my ($CRISPRS, $CRPseqs) = findOligo($seqInfo, $WINDOWSIZE); # CRISPR HoH and sequences array references
+my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
+my $targets             = Search::blast($CRPfile, $SUBJSEQ, $WINDOWSIZE, $HTML); # CRISPR target hits
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -102,6 +103,8 @@ sub checks {
         die 'Did not provide an output file, -out <outfile>', $USAGE;
     }
 
+    setParameters(); # set parameters to use in calls
+
     return;
 }
 
@@ -109,22 +112,21 @@ sub checks {
 # $input = ();
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes no arguments, uses global variables to decide which set of
-# variables to use and set.
+# variables to use and set for calls.
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $output = sets sequence file to use for BLAST search
-# $return = ( $seqInObj, $format, $seqObj, $sequence ); Returns sequence details
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub setParameters {
     # Set up Variables
     if ($GENOME) {
-        $SEQFILE = $GENOME;
+        $SUBJSEQ = $GENOME;
     } elsif ($SEQ) {
-        $SEQFILE = $SEQ;
+        $SUBJSEQ = $SEQ;
     } else {
-        die 'Could not determine wich file to use as search sequence.'
+        die 'Could not determine which file to use as search sequence.'
     }
 
-    return( getSequence($SEQFILE) );
+    return;
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -146,7 +148,7 @@ sub writeCRPfile {
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", "$outFile");
-    say $FH "Name\tSequence\tSubjStart\tOccurrences\tIdentities";
+    say $FH "Name\tSequence\tStrand\tStart\tOccurrences\tIdentities";
 
 
     my ($sortedCRISPRS, $details) = sortResults(\%targets);
@@ -171,11 +173,12 @@ sub writeCRPfile {
         }
 
         # Get all details to print to file
+        my $strand      = $CRISPRS->{$name}{'strand'};
         my $occurrence  = $details->{$name}->{'occurrences'};
         my $crispr      = $targets{$name}; # Array of Hashes for given CRISPR sequence name
         my $identities  = join("," , @{ $details->{$name}->{'identities'} } ); # get string of identities
-        my $sStart       = @{ $targets{$name} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
-        say $FH "$name\t$sequence\t$sStart\t$occurrence\t$identities"; # print to file
+        my $sStart      = @{ $targets{$name} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+        say $FH "$name\t$sequence\t$strand\t$sStart\t$occurrence\t$identities"; # print to file
     }
     say "CRISPRs file written to $outFile";
 
@@ -190,9 +193,9 @@ sub writeCRPfile {
 # This function takes 1 argument, the sequence file to get details using
 # BioPerl modules
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $return = ( $seqInObj, $format, $seqObj, $sequence ); Returns sequence details
+# $return = ( \%seqInfo ); Returns sequence details hash
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-sub getSequence {
+sub getSequences {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '($seqFile)';
     @_ == 1 or die wrongNumberArguments(), $filledUsage;
 
@@ -203,9 +206,17 @@ sub getSequence {
     my $format      = $seqInObj->_guess_format($seqFile); #check format of input file
     my $seqObj      = $seqInObj->next_seq;
     my $sequence    = $seqObj->seq;
-    my $revSeq      = $seqObj->revcom->seq;
+    my $reverse     = $seqObj->revcom->seq;
 
-    return($sequence, $revSeq);
+    my %seqInfo = (
+        'seqInObj'  => $seqInObj,
+        'format'    => $format,
+        'seqObj'    => $seqObj,
+        'sequence'  => $sequence,
+        'reverse'   => $reverse,
+    );
+
+    return(\%seqInfo);
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -240,7 +251,7 @@ sub writeCRPfasta {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes 1 arguments: $target hash of array of hashes
 # references returned from Search::blast. Returns a numerically
-# ordered array of CRISPR sequence names based on lowest identity 
+# ordered array of CRISPR sequence names based on lowest identity
 # base pair matches, then occurrences and a details hash with sorted
 # identities and number of occurrences per CRISPR sequence.
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
