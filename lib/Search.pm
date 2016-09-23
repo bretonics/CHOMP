@@ -9,7 +9,7 @@ use strict; use warnings; use diagnostics; use feature qw(say);
 use Carp;
 
 use MyConfig; use MyIO;
-use Data::Dumper;
+
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -54,11 +54,11 @@ Search::blast;
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 findOligo
 
-    Arg [1]     : Sequence to be searched
+    Arg [1]     : Sequences info hash to be searched
 
     Arg [2]     : Window size of CRISPR target
 
-    Example     : findOligo($sequence, $windowSize)
+    Example     : findOligo($seqInfo, $windowSize)
 
     Description : Find CRISPR targets
 
@@ -68,53 +68,64 @@ Search::blast;
 
 =cut
 sub findOligo {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($sequence, $windowSize)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($seqInfo, $windowSize)';
     @_ == 2 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($sequence, $windowSize) = @_;
-    my $seqLen = length($sequence);
+    my ($seqInfo, $windowSize) = @_;
+    my (%CRISPRS, @CRPseqs);
+    my $instance = 0; # track CRISPR count
 
-    my (%CRISPRS, @CRPseqs, $gRNA, $PAM, $content, $contentG, $contentC, $GC);
-    my $instance = 0; #track CRISPR count
+    # Anonymous subroutine to find CRISPR sequences in forward and reverse strands.
+    # Stores both strand findings in same hash (%CRISPRS) containing all information
+    # and array (@CRPseqs) containing all CRISPR sequences [cause why not].
+    my $go = sub {
+            my ($sequence, $strand) = @_;
 
-    for (my $i = 0; $i < $seqLen; $i++) {
-        my $window = substr $sequence, $i, $windowSize;
+            my $seqLen = length($sequence);
+            my ($gRNA, $PAM, $content, $contentG, $contentC, $GC);
 
-        # Return CRISPR sequences and information once done
-        if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence
-            foreach my $name (keys %CRISPRS) {
-                my $crispr = $CRISPRS{$name}{"gRNA"} . $CRISPRS{$name}{"PAM"}; #join gRNA + PAM sequence
-                $CRISPRS{$name}{"sequence"} = $crispr; #add CRISPR sequence (gRNA + PAM) to each hash
-                push @CRPseqs, $crispr #push to array
+            for (my $i = 0; $i < $seqLen; $i++) {
+                my $window = substr $sequence, $i, $windowSize;
+
+                # When DONE LOOKING UP -- Return CRISPR sequences and information
+                if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence
+                    foreach my $name (keys %CRISPRS) {
+                        my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'}; #join gRNA + PAM sequence
+                        $CRISPRS{$name}{'sequence'} = $crispr; #add CRISPR sequence (gRNA + PAM) to each hash
+                        push @CRPseqs, $crispr #push to array
+                    }
+                    # Return references of HoH containing all CRISPR instances found and respective information for each and array with the full CRISPR sequences joined (kmer gRNA + PAM)
+                    return(\%CRISPRS, \@CRPseqs);
+                };
+
+                if ($window =~ /(.+)(.GG)$/) {
+                    ($gRNA, $PAM) = ($1, $2); # get first 'kmer' number of nucleotides in gRNA (kmer) + PAM (NGG), gRNA + PAM = crispr sequence
+                    my $name = "CRISPR_$instance"; $instance++;
+
+                    # GC Content
+                    $contentG   = $window =~ tr/G//;
+                    $contentC   = $window =~ tr/C//;
+                    $GC         = ($contentG + $contentC)/$windowSize;
+
+                    # Store CRISPR oligomers and info in Hash of Hashes
+                    $content = { #anonymous hash of relevant gRNA content
+                        'strand'    => $strand,
+                        'gRNA'      => $gRNA,
+                        'PAM'       => $PAM,
+                        'G'         => $contentG,
+                        'C'         => $contentC,
+                        'GC'        => $GC,
+                    };
+                    # Hash key == CRISPR sequence name
+                    # Hash value == HoH with CRISPR content info
+                    $CRISPRS{$name} = $content;
+                }
             }
-            # Return references of HoH containing all CRISPR instances found and respective information for each and array with the full CRISPR sequences joined (kmer gRNA + PAM)
-            return(\%CRISPRS, \@CRPseqs);
-        };
+    };
 
-        my $kmer = ($windowSize - 3); #kmer is the string of base pairs before NGG
-
-        if ($window =~ /(.+)(.GG)$/) {
-            ($gRNA, $PAM) = ($1, $2); #get first 'kmer' number of nucleotides in gRNA + PAM (NGG)
-            my $name = "CRISPR_$instance"; $instance++;
-
-            # GC Content
-            $contentG = $window =~ tr/G//;
-            $contentC = $window =~ tr/C//;
-            $GC = ($contentG + $contentC)/$windowSize;
-
-            # Store CRISPR oligomers and info in Hash of Hashes
-            $content = { #anonymous hash of relevant gRNA content
-                'gRNA' => $gRNA,
-                'PAM'   => $PAM,
-                'G'     => $contentG,
-                'C'     => $contentC,
-                'GC'    => $GC,
-            };
-            # Hash key == CRISPR sequence name
-            # Hash value == HoH with CRISPR content info
-            $CRISPRS{$name} = $content;
-        }
-    }
+    # Get all CRISPR sequences in forward and reverse strands of sequence passed, -seq
+    $go->( $seqInfo->{'sequence'}, "plus");
+    $go->( $seqInfo->{'reverse'}, "reverse");
 }
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
@@ -135,16 +146,16 @@ sub findOligo {
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $seqFile, $WINDOWSIZE, $HTML)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $SUBJSEQ, $WINDOWSIZE, $HTML)';
     @_ == 4 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRPfile, $seqFile, $wordSize, $HTML) = @_;
+    my ($CRPfile, $SUBJSEQ, $wordSize, $HTML) = @_;
     my (%targets, $info);
     $wordSize = 7;
     # $wordSize = sprintf "%.0f", ($wordSize/2); #Make wordSize == 1/2 of WINDOWSIZE when searching BLAST hits
 
     # Use 'blastn-short' settings for sequences shorter than 30 nucleotides
-    my $BLASTCMD = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -outfmt \"6 qseqid sseqid qstart qend sstart send sstrand pident nident\"";
+    my $BLASTCMD = "blastn -query $CRPfile -subject $SUBJSEQ -word_size $wordSize -outfmt \"6 qseqid sseqid qstart qend sstart send sstrand pident nident\"";
 
     open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
     while ( my $blastResult = <BLAST> ) {
@@ -171,7 +182,7 @@ sub blast {
         push @{ $targets{$crispr} } , $info;
     } close BLAST;
 
-    my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $seqFile -word_size $wordSize -out blast.html -html";
+    my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $SUBJSEQ -word_size $wordSize -out blast.html -html";
     `$BLASTCMD_HTML` if($HTML);
 
     return(\%targets);
