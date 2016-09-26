@@ -28,7 +28,7 @@ use MyConfig; use MyIO; use Handlers; use Databases;
 #-------------------------------------------------------------------------------
 # COMMAND LINE
 my $SEQ;
-my $GENOME;
+my @GENOME;
 my $DOWNSEQ;
 my $UPSEQ;
 my $WINDOWSIZE  = 23;
@@ -53,7 +53,7 @@ Options:
 # OPTIONS
 GetOptions(
     'seq=s'             =>\$SEQ,
-    'genome:s'          =>\$GENOME,
+    'genome:s{,10}'     =>\@GENOME,
     'down:s'            =>\$DOWNSEQ,
     'up:s'              =>\$UPSEQ,
     'window:i'          =>\$WINDOWSIZE,
@@ -71,16 +71,16 @@ checks(); #check CL arguments
 my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
 my $REALBIN = $FindBin::RealBin;
-my $OUTDIR  = mkDir('CRISPRS');
 
-my ($seqInfo)    = getSequences($SEQ);
-my $SUBJSEQ; # sequence file to use in BLAST search
+my ($seqDetails)    = getSeqDetails($SEQ);
+my @SUBJSEQS; # sequence file(s) to use in BLAST search
 
 #-------------------------------------------------------------------------------
 # CALLS
-my ($CRISPRS, $CRPseqs) = findOligo($seqInfo, $WINDOWSIZE); # CRISPR HoH and sequences array references
+mkDir($OUTDIR);
+my ($CRISPRS, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE); # CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
-my $targets             = Search::blast($CRPfile, $SUBJSEQ, $WINDOWSIZE, $HTML); # CRISPR target hits
+my $targets             = Search::blast($CRPfile, \@SUBJSEQS, $HTML, $OUTDIR); # CRISPR target hits
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -99,10 +99,10 @@ sub checks {
         die 'Did not provide an input file, -seq <infile>', $USAGE;
     }
     unless ($DOWNSEQ){
-        say 'Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>';
+        say 'Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>' if($VERBOSE);
     }
     unless ($UPSEQ){
-        say 'Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>';
+        say 'Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>' if($VERBOSE);
     }
     unless ($OUTFILE){
         die 'Did not provide an output file, -out <outfile>', $USAGE;
@@ -123,12 +123,12 @@ sub checks {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub setParameters {
     # Set up Variables
-    if ($GENOME) {
-        $SUBJSEQ = $GENOME;
+    if (@GENOME) {
+        @SUBJSEQS = @GENOME;
     } elsif ($SEQ) {
-        $SUBJSEQ = $SEQ;
+        @SUBJSEQS = $SEQ;
     } else {
-        die 'Could not determine which file to use as search sequence.'
+        die 'Could not determine which file(s) to use as search sequence.'
     }
 
     return;
@@ -152,7 +152,7 @@ sub writeCRPfile {
     my $num = keys %$CRISPRS; #number of CRISPR sequences
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
-    my $FH = getFH(">", "$outFile");
+    my $FH = getFH(">", $outFile);
     say $FH "Name\tSequence\tStrand\tStart\tOccurrences\tIdentities";
 
 
@@ -161,7 +161,11 @@ sub writeCRPfile {
 
     # Get ordered CRISPR sequences + info to print
     foreach my $name (@sortedCRISPRS) {
-        my $sequence = $CRISPRS->{$name}->{'sequence'};
+        # Parse CRISPR name ('CRISPR_\d') for each genome sequence BLASTED against
+        # to search original name in hash returned from findOligo subroutine.
+        # $1 == CRISPR name
+        $name =~ /^(CRISPR_\d+)/;
+        my $sequence = $CRISPRS->{$1}->{'sequence'};
 
         # Complete oligo sequence:
         # + DOWN flanking target region
@@ -178,9 +182,8 @@ sub writeCRPfile {
         }
 
         # Get all details to print to file
-        my $strand      = $CRISPRS->{$name}{'strand'};
+        my $strand      = $CRISPRS->{$1}{'strand'};
         my $occurrence  = $details->{$name}->{'occurrences'};
-        my $crispr      = $targets{$name}; # Array of Hashes for given CRISPR sequence name
         my $identities  = join("," , @{ $details->{$name}->{'identities'} } ); # get string of identities
         my $sStart      = @{ $targets{$name} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
         say $FH "$name\t$sequence\t$strand\t$sStart\t$occurrence\t$identities"; # print to file
@@ -200,7 +203,7 @@ sub writeCRPfile {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = ( \%seqInfo ); Returns sequence details hash
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-sub getSequences {
+sub getSeqDetails {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '($seqFile)';
     @_ == 1 or die wrongNumberArguments(), $filledUsage;
 
