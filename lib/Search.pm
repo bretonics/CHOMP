@@ -166,6 +166,7 @@ sub blast {
 
     foreach my $subject (@SUBJSEQS) {
         my $subjName = _getSeqName($subject);
+        my $outFile = "$OUTDIR/blast/$subjName\_$OUTFILE\_blast.html";
 
         say "Searching CRISPR targets against $subject";
 
@@ -178,7 +179,7 @@ sub blast {
             # next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
 
             my @result = split('\t', $blastResult);
-            my $crispr = $result[0] . "_$subjName"; # CRISPR sequence name ex.) 'CRISPR_0_*'
+            my $crispr = $result[0]; # CRISPR sequence name ex.) 'CRISPR_0'
             $info = { #anonymous hash with BLAST info for each match
                 'sseqid'    => $result[1],
                 'qstart'    => $result[2],
@@ -189,15 +190,15 @@ sub blast {
                 'pident'    => $result[7],
                 'nident'    => $result[8],
             };
-            # Hash of Array of Hashes to store BLAST results for each query
+            # Hash of Hashes of Array of Hashes to store BLAST results for each query
+            # -- Hash key == Subject name
             # -- Hash key == CRISRP name
-            # -- Array accounts for multiple hits for each CRISPR sequence
+            # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
             # -- Hash contains BLAST match info
-            push @{ $targets{$crispr} } , $info;
+            push @{ $targets{$subjName}{$crispr} } , $info;
         } close BLAST;
 
         # BLAST HTML output if called
-        my $outFile = "$OUTDIR/blast/$subjName\_$OUTFILE\_blast.html";
         my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $subject -word_size $wordSize -out $outFile -html";
         `$BLASTCMD_HTML` if($HTML);
         say "File saved: $outFile";
@@ -205,7 +206,6 @@ sub blast {
 
     return(\%targets);
 }
-
 
 #-------------------------------------------------------------------------------
 # HELPERS
