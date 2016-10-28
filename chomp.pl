@@ -13,6 +13,8 @@ use Search;
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers; use Databases;
 
+use Data::Dumper;
+
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -33,7 +35,9 @@ my $DOWNSEQ;
 my $UPSEQ;
 my $WINDOWSIZE  = 23;
 my $OUTFILE;
+my $OUTDIR = 'CRISPRS';
 my $HTML; #FALSE
+my $VERBOSE; #FALSE
 
 my $USAGE       = "\n\n$0 [options]\n
 Options:
@@ -43,6 +47,7 @@ Options:
     -up                 Up sequence to append
     -window             Window size for CRISPR oligo (default = 23)
     -out                Out file name
+    -outdir             Out directory name
     -html               Print HTML BLAST results
     -help               Shows this message
 \n";
@@ -55,7 +60,9 @@ GetOptions(
     'up:s'              =>\$UPSEQ,
     'window:i'          =>\$WINDOWSIZE,
     'out=s'             =>\$OUTFILE,
+    'outdir:s'          =>\$OUTDIR,
     'html!'             =>\$HTML,
+    'verbose!'          =>\$VERBOSE,
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
 
@@ -66,16 +73,17 @@ checks(); #check CL arguments
 my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
 my $REALBIN = $FindBin::RealBin;
-my $OUTDIR  = mkDir('CRISPRS');
+my $SUBJSEQ; # sequence file to use in BLAST search, set by setParameters()
 
+mkDir($OUTDIR);
 my ($seqInfo)    = getSequences($SEQ);
-my $SUBJSEQ; # sequence file to use in BLAST search
 
 #-------------------------------------------------------------------------------
 # CALLS
 my ($CRISPRS, $CRPseqs) = findOligo($seqInfo, $WINDOWSIZE); # CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, $SUBJSEQ, $WINDOWSIZE, $HTML); # CRISPR target hits
+
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -235,12 +243,13 @@ sub writeCRPfasta {
     my ($CRISPRS, $OUTFILE) = @_;
     my $outFile = "$OUTDIR/$OUTFILE.fasta";
     my $FH = getFH(">", $outFile);
-    my $num = keys %$CRISPRS; #number of CRISPR sequences
+    my $num = keys %$CRISPRS; # number of CRISPR sequences
 
-    for (my $i = 0; $i < $num; $i++) {
+    for (my $i = 0; $i < $num; $i++) { # get sequences in numerical order
         my $crispr = "CRISPR_$i";
         my $sequence = $CRISPRS->{$crispr}->{'sequence'};
-        say $FH ">$crispr\n$sequence";
+        say $FH ">$crispr:" . $CRISPRS->{$crispr}->{'start'}; # 'CRISPR_0:start_position'
+        say $FH $sequence;
     } close $FH;
 
     return $outFile;

@@ -10,10 +10,12 @@ use Carp;
 
 use MyConfig; use MyIO;
 
+use Data::Dumper;
+
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
-#   FILE:           search.pm
+#   FILE:           Search.pm
 #   LICENSE:
 #   USAGE:
 #   DEPENDENCIES:   - NCBI's BLAST+ CL utility
@@ -87,14 +89,14 @@ sub findOligo {
             for (my $i = 0; $i < $seqLen; $i++) {
                 my $window = substr $sequence, $i, $windowSize;
 
-                # When DONE LOOKING UP -- Return CRISPR sequences and information
+                # LAST STEP: When DONE LOOKING UP -- Return CRISPR sequences and information
                 if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence
                     foreach my $name (keys %CRISPRS) {
                         my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'}; #join gRNA + PAM sequence
-                        $CRISPRS{$name}{'sequence'} = $crispr; #add CRISPR sequence (gRNA + PAM) to each hash
-                        push @CRPseqs, $crispr #push to array
+                        $CRISPRS{$name}{'sequence'} = $crispr; # add CRISPR sequence (gRNA + PAM) to each hash
+                        push @CRPseqs, $crispr # push each N-oligomer CRISPR seq to array
                     }
-                    # Return references of HoH containing all CRISPR instances found and respective information for each and array with the full CRISPR sequences joined (kmer gRNA + PAM)
+                    # Return references of HoH containing all CRISPR instances found and respective information for each + array with the all CRISPR sequences joined (kmer gRNA + PAM)
                     return(\%CRISPRS, \@CRPseqs);
                 };
 
@@ -110,6 +112,7 @@ sub findOligo {
                     # Store CRISPR oligomers and info in Hash of Hashes
                     $content = { #anonymous hash of relevant gRNA content
                         'strand'    => $strand,
+                        'start'     => $i,
                         'gRNA'      => $gRNA,
                         'PAM'       => $PAM,
                         'G'         => $contentG,
@@ -117,15 +120,15 @@ sub findOligo {
                         'GC'        => $GC,
                     };
                     # Hash key == CRISPR sequence name
-                    # Hash value == HoH with CRISPR content info
+                    # Hash value == Hash with CRISPR content info
                     $CRISPRS{$name} = $content;
                 }
             }
     };
 
     # Get all CRISPR sequences in forward and reverse strands of sequence passed, -seq
-    $go->( $seqInfo->{'sequence'}, "plus");
-    $go->( $seqInfo->{'reverse'}, "reverse");
+    $go->( $seqInfo->{'sequence'}, 'plus' );
+    $go->( $seqInfo->{'reverse'}, 'reverse' );
 }
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
@@ -159,11 +162,11 @@ sub blast {
 
     open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
     while ( my $blastResult = <BLAST> ) {
-        my ($nident) = $blastResult =~ /(\d+)$/; #get number of identical matches
+        my ($nident) = $blastResult =~ /(\d+)$/; # get number of identical matches
         # next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
 
         my @result = split('\t', $blastResult);
-        my $crispr = $result[0]; #CRISPR sequence name ex.) 'CRISPR_0'
+        my ($crispr) = $result[0] =~ m/(.+):\d+/; # CRISPR sequence name ex.) 'CRISPR_0' instead of 'CRISPR_0:0'
 
         $info = { #anonymous hash with BLAST info for each match
             'sseqid'    => $result[1],
