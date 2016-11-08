@@ -2,16 +2,12 @@
 
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Getopt::Long; use Pod::Usage;
-
 use FindBin; use lib "$FindBin::RealBin/lib";
-
 use Readonly;
-
 use Bio::Seq; use Bio::SeqIO;
-use Search;
-
+use Search; use SS; # lib modules
 # Own Modules (https://github.com/bretonics/Modules)
-use MyConfig; use MyIO; use Handlers; use Databases;
+use MyConfig; use MyIO; use Handlers;
 
 use Data::Dumper;
 
@@ -34,19 +30,21 @@ my $GENOME;
 my $DOWNSEQ;
 my $UPSEQ;
 my $WINDOWSIZE  = 23;
+my $SS;
 my $OUTFILE;
 my $OUTDIR = 'CRISPRS';
-my $HTML; #FALSE
-my $VERBOSE; #FALSE
+my $HTML;
+my $VERBOSE;
 
 my $USAGE       = "\n\n$0 [options]\n
 Options:
-    -seq                Sequence file to search CRISPRs
+    -seq                Sequence file to search CRISPRs [required]
     -genome             Genome sequence file to BLAST search (search instead of -seq)
     -down               Down sequence to append
     -up                 Up sequence to append
     -window             Window size for CRISPR oligo (default = 23)
-    -out                Out file name
+    -ss                 Secondary structure prediction
+    -out                Out file name [required]
     -outdir             Out directory name
     -html               Print HTML BLAST results
     -help               Shows this message
@@ -59,6 +57,7 @@ GetOptions(
     'down:s'            =>\$DOWNSEQ,
     'up:s'              =>\$UPSEQ,
     'window:i'          =>\$WINDOWSIZE,
+    'ss!'               =>\$SS,
     'out=s'             =>\$OUTFILE,
     'outdir:s'          =>\$OUTDIR,
     'html!'             =>\$HTML,
@@ -66,7 +65,7 @@ GetOptions(
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
 
-checks(); #check CL arguments
+checks(); # check CL arguments
 
 #-------------------------------------------------------------------------------
 # VARIABLES
@@ -74,16 +73,13 @@ my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
 my $REALBIN = $FindBin::RealBin;
 my $SUBJSEQ; # sequence file to use in BLAST search, set by setParameters()
-
-mkDir($OUTDIR);
-my ($seqInfo)    = getSequences($SEQ);
-
 #-------------------------------------------------------------------------------
 # CALLS
+mkDir($OUTDIR);
+my ($seqInfo)           = getSequences($SEQ);
 my ($CRISPRS, $CRPseqs) = findOligo($seqInfo, $WINDOWSIZE); # CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, $SUBJSEQ, $WINDOWSIZE, $HTML); # CRISPR target hits
-
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -98,16 +94,16 @@ writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     # Command line arguments passed
-    unless ($SEQ){
+    unless ($SEQ) {
         die 'Did not provide an input file, -seq <infile>', $USAGE;
     }
-    unless ($DOWNSEQ){
+    unless ($DOWNSEQ) {
         say 'Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>';
     }
-    unless ($UPSEQ){
+    unless ($UPSEQ) {
         say 'Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>';
     }
-    unless ($OUTFILE){
+    unless ($OUTFILE) {
         die 'Did not provide an output file, -out <outfile>', $USAGE;
     }
 
@@ -151,11 +147,12 @@ sub writeCRPfile {
     @_ == 6 or die wrongNumberArguments(), $filledUsage;
 
     my ($CRISPRS, $targets, $down, $up, $window, $file) = @_;
+
     my %targets = %$targets;
-    my $num = keys %$CRISPRS; #number of CRISPR sequences
+    my $num = keys %$CRISPRS; # number of CRISPR sequences
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
-    my $FH = getFH(">", "$outFile");
+    my $FH = getFH(">", $outFile);
     say $FH "Name\tSequence\tStrand\tStart\tOccurrences\tIdentities";
 
 
@@ -248,6 +245,7 @@ sub writeCRPfasta {
     for (my $i = 0; $i < $num; $i++) { # get sequences in numerical order
         my $crispr = "CRISPR_$i";
         my $sequence = $CRISPRS->{$crispr}->{'sequence'};
+        ss($crispr, $sequence) if($SS); # secondary structure prediction if desired
         say $FH ">$crispr:" . $CRISPRS->{$crispr}->{'start'}; # 'CRISPR_0:start_position'
         say $FH $sequence;
     } close $FH;
