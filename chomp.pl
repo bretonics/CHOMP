@@ -11,7 +11,7 @@ use Bio::Seq; use Bio::SeqIO;
 use Search;
 
 # Own Modules (https://github.com/bretonics/Modules)
-use MyConfig; use MyIO; use Handlers; use Databases;
+use MyConfig; use MyIO; use Handlers;
 use Data::Dumper;
 # ==============================================================================
 #
@@ -159,14 +159,19 @@ sub writeCRPfile {
     my ($sortedCRISPRS, $details) = sortResults(\%targets);
     my %sortedCRISPRS = %$sortedCRISPRS;
 
+    # %details
+    # -- Hash key == subject
+    # -- Hash key == CRISPR name
+    # -- Hash keys == 'identities' and 'occurrences'
+    my %details = %$details;
 
     # Get ordered CRISPR sequences + info to print
     foreach my $sorted (values %sortedCRISPRS) {
 
 
-    # while ( my ($name,$subject) = each %details ) {
-        foreach my $name (keys %details) { # iterate through each subject seq
-            # my $subject = $details{$name}
+    while ( my ($seq) = keys %details ) {
+        foreach my $name ( keys $details{$seq} ) { # iterate through each subject seq
+            my $subject = $details{$seq}{$name};
             my $sequence = $CRISPRS->{$name}->{'sequence'};
 
             # Complete oligo sequence:
@@ -182,19 +187,19 @@ sub writeCRPfile {
             } else {
                 $sequence = $down . $sequence . $up;
             }
-
+# say @{$details->{$seq}{$name}->{'identities'} }and exit;
             # Get all details to print to file
             my $strand      = $CRISPRS->{$name}{'strand'};
-            my $occurrence  = $details->{$name}{$subject}->{'occurrences'};
-            my $identities  = join("," , @{ $details->{$name}{$subject}->{'identities'} } ); # get string of identities
+            my $occurrence  = $details->{$seq}{$subject}->{'occurrences'};
+            my $identities  = join("," , @{ $details->{$seq}{$subject}->{'identities'} } ); # get string of identities
             my $sStart      = @{ $targets{$name}{$subject} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
             say $FH "$name\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
     }
-    
 
 
-            
+
+
     }
     say "CRISPRs file written to $outFile";
 
@@ -305,16 +310,20 @@ sub sortResults {
     }
 
     # Return sorted CRISPR names based on lowest identity base pair matches, then occurrences
-    foreach my $name (keys %details) { # iterate through each CRISPR instance
-        foreach my $subject ( keys $details{$name} ) { # iterate through each BLAST subject instance
-            @sorted = ( sort { $details{$a}{$subject}{'identities'}[0] <=> $details{$b}{$subject}{'identities'}[0] || $details{$a}{$subject}{'occurrences'} <=> $details{$b}{$subject}{'occurrences'} } keys %details );
-
+    foreach my $name (keys %details) { # iterate through each genome
+        foreach my $subject ( keys $details{$name} ) { # iterate through each CRISPR instance
+            @sorted = ( sort { $details{$name}{$a}{'identities'}[0] <=> $details{$name}{$b}{'identities'}[0] || $details{$name}{$a}{'occurrences'} <=> $details{$name}{$b}{'occurrences'} } keys $details{$name} );
             $sortedCRISPRS{$subject} = \@sorted;
             # say "$name:$subject\n", @{$sortedCRISPRS{$subject}}; next;
         }
     }
-    # say Dumper(\%details); exit;
-    # say Dumper(\%sortedCRISPRS); exit;
+
+# say Dumper(\%details); exit;
+# say Dumper(\%sortedCRISPRS); exit;
+    # %details
+    # -- Hash key == subject
+    # -- Hash key == CRISPR name
+    # -- Hash keys == 'identities' and 'occurrences'
     return (\%sortedCRISPRS, \%details);
 }
 
