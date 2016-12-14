@@ -166,32 +166,32 @@ sub writeCRPfile {
     my %details = %$details;
 
     # Get ordered CRISPR sequences + info to print
-    foreach my $crispr (keys %sortedCRISPRS) {
-        my @subjects = keys $details{$crispr};
-      foreach my $subject ( @subjects) {
-        my $sequence = $CRISPRS->{$crispr}->{'sequence'};
+    foreach my $subject (keys %sortedCRISPRS) {
+        my @crisprs = @{ $sortedCRISPRS{$subject} };
+        foreach my $crispr ( @crisprs) {
+            my $sequence = $CRISPRS->{$crispr}->{'sequence'};
 
-        # Complete oligo sequence:
-        # + DOWN flanking target region
-        # + CRISPR sequence
-        # + UP flanking target region
-        if (!$down and !$up) {
-            $sequence = $sequence;
-        } elsif ($down and !$up) {
-            $sequence = $down . $sequence;
-        } elsif (!$down and $up) {
-            $sequence = $sequence . $up;
-        } else {
-            $sequence = $down . $sequence . $up;
+            # Complete oligo sequence:
+            # + DOWN flanking target region
+            # + CRISPR sequence
+            # + UP flanking target region
+            if (!$down and !$up) {
+                $sequence = $sequence;
+            } elsif ($down and !$up) {
+                $sequence = $down . $sequence;
+            } elsif (!$down and $up) {
+                $sequence = $sequence . $up;
+            } else {
+                $sequence = $down . $sequence . $up;
+            }
+
+            # Get all details to print to file
+            my $strand      = $CRISPRS->{$crispr}{'strand'};
+            my $occurrence  = $details->{$subject}{$crispr}->{'occurrences'};
+            my $identities  = join("," , @{ $details->{$subject}{$crispr}->{'identities'} } ); # get string of identities
+            my $sStart      = @{ $targets{$crispr}{$subject} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+            say $FH "$crispr\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
-
-        # Get all details to print to file
-        my $strand      = $CRISPRS->{$crispr}{'strand'};
-        my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
-        my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'identities'} } ); # get string of identities
-        my $sStart      = @{ $targets{$crispr}{$subject} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
-        say $FH "$crispr\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
-      }
     }
     say "CRISPRs file written to $outFile";
     return;
@@ -294,10 +294,10 @@ sub sortResults {
             # Number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
             my $occurrences = @$matches; # number of occcurrences per CRISPR
             # %details
-            # -- Hash key == CRISPR name
             # -- Hash key == subject
+            # -- Hash key == CRISPR name
             # -- Hash keys == 'identities' and 'occurrences'
-            $details{$crispr}{$subject} = {
+            $details{$subject}{$crispr} = {
                 'identities'    => \@identities,
                 'occurrences'   => $occurrences,
             };
@@ -305,19 +305,17 @@ sub sortResults {
     }
 
     # Return sorted CRISPR names based on lowest identity base pair matches, then occurrences
-    foreach my $crispr (keys %details) { # iterate through each CRISPR instance
-        my @subjects = keys $details{$crispr};
-        # foreach my $subject ( keys $details{$crispr} ) { # iterate through each subject
-            @sorted = ( sort { $details{$crispr}{$a}{'identities'}[0] <=> $details{$crispr}{$b}{'identities'}[0] || $details{$crispr}{$a}{'occurrences'} <=> $details{$crispr}{$b}{'occurrences'} } @subjects );
-            $sortedCRISPRS{$crispr} = \@sorted;
-            # say "$crispr\t" , join ",", $details{$crispr}{$subject}{'identities'}[0];
+    foreach my $subject (keys %details) { # iterate through each CRISPR instance
+        my @crisprs = keys $details{$subject};
+        # foreach my $subject ( keys $details{$subject} ) { # iterate through each subject
+        @sorted = ( sort { $details{$subject}{$a}{'identities'}[0] <=> $details{$subject}{$b}{'identities'}[0] || $details{$subject}{$a}{'occurrences'} <=> $details{$subject}{$b}{'occurrences'} } @crisprs );
+        $sortedCRISPRS{$subject} = \@sorted;
+# say "$crispr\t" , join ",", $details{$crispr}{$subject}{'identities'}[0];
         # }
-        say "$crispr\n", Dumper(\%sortedCRISPRS), "\n\n";
-        # foreach (@sorted) {say "$_\n", Dumper($details{$crispr}), "\n\n" }
+# say "$subject\n", Dumper($sortedCRISPRS{$subject}), "\n\n";
+# foreach (@sorted) {say "$_\n", Dumper($details{$crispr}), "\n\n" }
     }
-
-
-
+# say  Dumper($sortedCRISPRS)and exit;
     return (\%sortedCRISPRS, \%details);
 }
 
