@@ -308,7 +308,7 @@ sub sortResults {
     foreach my $subject (keys %details) { # iterate through each CRISPR instance
         my @crisprs = keys $details{$subject};
         # foreach my $subject ( keys $details{$subject} ) { # iterate through each subject
-        @sorted = ( sort { $details{$subject}{$a}{'identities'}[0] <=> $details{$subject}{$b}{'identities'}[0] || $details{$subject}{$a}{'occurrences'} <=> $details{$subject}{$b}{'occurrences'} } @crisprs );
+        @sorted = ( sort { $details{$subject}{$b}{'identities'}[0] <=> $details{$subject}{$a}{'identities'}[0] || $details{$subject}{$a}{'occurrences'} <=> $details{$subject}{$b}{'occurrences'} } @crisprs );
         $sortedCRISPRS{$subject} = \@sorted;
 # say "$crispr\t" , join ",", $details{$crispr}{$subject}{'identities'}[0];
         # }
@@ -338,6 +338,6 @@ sub sortIdentities {
         my $nident = $hash->{'nident'}; chomp($nident);
         push @identities, $nident;
     }
-    @identities = ( sort {$a <=> $b} @identities ); # sort ascending numerically
+    @identities = ( sort {$b <=> $a} @identities ); # sort ascending numerically
     return (@identities); # return sorted identity hits
 }
