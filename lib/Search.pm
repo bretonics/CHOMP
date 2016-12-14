@@ -191,11 +191,11 @@ sub blast {
                 'nident'    => $result[8],
             };
             # Hash of Hashes of Array of Hashes to store BLAST results for each query
-            # -- Hash key == Subject name
             # -- Hash key == CRISRP name
+            # -- Hash key == Subject name
             # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
             # -- Hash contains BLAST match info
-            push @{ $targets{$subjName}{$crispr} } , $info;
+            push @{ $targets{$crispr}{$subjName} } , $info;
         } close BLAST;
 
         # BLAST HTML output if called

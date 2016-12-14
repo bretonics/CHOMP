@@ -12,7 +12,7 @@ use Search;
 
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers;
-
+use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -167,7 +167,8 @@ sub writeCRPfile {
 
     # Get ordered CRISPR sequences + info to print
     foreach my $crispr (keys %sortedCRISPRS) {
-      foreach my $subject (keys %details) {
+        my @subjects = keys $details{$crispr};
+      foreach my $subject ( @subjects) {
         my $sequence = $CRISPRS->{$crispr}->{'sequence'};
 
         # Complete oligo sequence:
@@ -186,9 +187,9 @@ sub writeCRPfile {
 
         # Get all details to print to file
         my $strand      = $CRISPRS->{$crispr}{'strand'};
-        my $occurrence  = $details->{$subject}{$crispr}->{'occurrences'};
-        my $identities  = join("," , @{ $details->{$subject}{$crispr}->{'identities'} } ); # get string of identities
-        my $sStart      = @{ $targets{$subject}{$crispr} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+        my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
+        my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'identities'} } ); # get string of identities
+        my $sStart      = @{ $targets{$crispr}{$subject} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
         say $FH "$crispr\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
       }
     }
@@ -278,25 +279,25 @@ sub sortResults {
     my (%sortedCRISPRS, @sorted);
 
     # Get number of occurrences per CRISPR target in %targets Hash of Hashes of Array of Hashes
-    # -- Hash key == Subject name
     # -- Hash key == CRISRP name
+    # -- Hash key == Subject name
     # -- Array accounts for multiple hits for each CRISPR sequence
     # -- Hash contains BLAST match info
 
     # CRISPR sequence target matches from BLAST call
     # $targets == (Hash of Hashes of Array of Hashes)
-    foreach my $name (keys %targets) { # iterate through each CRISPR instance
-        my ($subjects) = $targets{$name}; # $subjects == Hash of Array of Hashes. BLAST subject instance
-        foreach my $subject (keys %$subjects) { # iterate through each BLAST subject instance
-            my ($matches) = $subjects->{$subject};
+    foreach my $crispr (keys %targets) { # iterate through each CRISPR instance
+        my (@subjects) = keys $targets{$crispr}; # @subjects == BLAST subject instances in Hash of Array of Hashes
+        foreach my $subject (@subjects) { # iterate through each BLAST subject instance
+            my ($matches) = $targets->{$crispr}{$subject};
             my @identities = sortIdentities( $matches );
             # Number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
             my $occurrences = @$matches; # number of occcurrences per CRISPR
             # %details
-            # -- Hash key == subject
             # -- Hash key == CRISPR name
+            # -- Hash key == subject
             # -- Hash keys == 'identities' and 'occurrences'
-            $details{$name}{$subject} = {
+            $details{$crispr}{$subject} = {
                 'identities'    => \@identities,
                 'occurrences'   => $occurrences,
             };
@@ -304,12 +305,18 @@ sub sortResults {
     }
 
     # Return sorted CRISPR names based on lowest identity base pair matches, then occurrences
-    foreach my $subject (keys %details) { # iterate through each subject
-        foreach my $crispr ( keys $details{$subject} ) { # iterate through each CRISPR instance
-            @sorted = ( sort { $details{$subject}{$a}{'identities'}[0] <=> $details{$subject}{$b}{'identities'}[0] || $details{$subject}{$a}{'occurrences'} <=> $details{$subject}{$b}{'occurrences'} } keys $details{$subject} );
+    foreach my $crispr (keys %details) { # iterate through each CRISPR instance
+        my @subjects = keys $details{$crispr};
+        # foreach my $subject ( keys $details{$crispr} ) { # iterate through each subject
+            @sorted = ( sort { $details{$crispr}{$a}{'identities'}[0] <=> $details{$crispr}{$b}{'identities'}[0] || $details{$crispr}{$a}{'occurrences'} <=> $details{$crispr}{$b}{'occurrences'} } @subjects );
             $sortedCRISPRS{$crispr} = \@sorted;
-        }
+            # say "$crispr\t" , join ",", $details{$crispr}{$subject}{'identities'}[0];
+        # }
+        say "$crispr\n", Dumper(\%sortedCRISPRS), "\n\n";
+        # foreach (@sorted) {say "$_\n", Dumper($details{$crispr}), "\n\n" }
     }
+
+
 
     return (\%sortedCRISPRS, \%details);
 }
@@ -323,7 +330,7 @@ sub sortResults {
 # $return = sorted identities ascending numerically
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub sortIdentities {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets{$name})';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets->{$crispr}{$subject})';
     @_ == 1 or die wrongNumberArguments(), $filledUsage;
 
     my ($matches) = @_;
