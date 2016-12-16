@@ -163,9 +163,10 @@ sub writeCRPfile {
 
 
     # Get ordered CRISPR sequences + info to print
-    foreach my $subject (@subjects) {
-        my @crisprs = @{ $sortedCRISPRS{$subject} };
-        foreach my $crispr ( @crisprs) {
+    my ($sorted) = values %sortedCRISPRS;
+    my @sorted = @$sorted;
+    foreach my $crispr (@sorted) {
+        foreach my $subject (@subjects) {
             my $sequence = $CRISPRS->{$crispr}->{'sequence'};
 
             # Complete oligo sequence:
@@ -190,6 +191,7 @@ sub writeCRPfile {
             say $FH "$crispr\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
     }
+
     say "CRISPRs file written to $outFile";
     return;
 }
