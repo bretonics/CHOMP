@@ -190,12 +190,13 @@ sub blast {
                 'pident'    => $result[7],
                 'nident'    => $result[8],
             };
-            # Hash of Hashes of Array of Hashes to store BLAST results for each query
+            # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
             # -- Hash key == CRISRP name
             # -- Hash key == Subject name
+            # -- Hash key == 'info'
             # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
             # -- Hash contains BLAST match info
-            push @{ $targets{$crispr}{$subjName} } , $info;
+                push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
         } close BLAST;
 
         # BLAST HTML output if called
