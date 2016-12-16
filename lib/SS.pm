@@ -21,6 +21,7 @@ sub ss {
     my $rnaPlot = "$outFile\_rna.ps";
     my $dotPlot = "$outFile\_dot.ps";
     my $rssPlot = "$outFile\_rss.ps";
+
     my $F = RNA::pf_fold($sequence);   # compute partition function and pair pobabilities
     my ($ss, $mfe) = RNA::fold($sequence);
     RNA::PS_rna_plot($sequence, $ss, $rnaPlot);  # write PS plot to CRISPR_#_rna.ps
@@ -32,7 +33,4 @@ sub ss {
 
     return;
 }
-
-
-
 1;

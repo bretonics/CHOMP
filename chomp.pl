@@ -8,7 +8,7 @@ use Bio::Seq; use Bio::SeqIO;
 use Search; use SS; # lib modules
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers;
-
+use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
