@@ -342,11 +342,14 @@ sub sortIdentities {
 
     my ($matches) = @_;
     my @matches = @$matches;
+    my $numMatches = @matches;
     my @identities;
     foreach my $hash (@matches) {
         my $nident = $hash->{'nident'}; chomp($nident);
+        return ($nident) if ($numMatches == 1); # return single match (when $nident == $WINDOWSIZE is only match)
         push @identities, $nident unless ($nident == $WINDOWSIZE);
     }
+
     @identities = ( sort {$b <=> $a} @identities ); # sort ascending numerically
     return (@identities); # return sorted identity hits
 }
