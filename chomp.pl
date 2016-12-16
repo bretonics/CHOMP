@@ -277,7 +277,7 @@ sub sortResults {
     my ($targetsRef) = @_;
     my %targets = %$targetsRef;
     my @crisprs = sort keys %targets;
-    my (@identities, @subjects, @sorted, %sortedCRISPRS, %details);
+    my (@subjects, @sorted, %sortedCRISPRS, %details);
 
     # Get number of occurrences from BLAST call per CRISPR target in %targets Hash of Hashes of Array of Hashes
     # %targets HoHoAoH:
@@ -288,8 +288,10 @@ sub sortResults {
     # -- Hash contains BLAST match info
     foreach my $crispr (@crisprs) { # iterate through each CRISPR instance
         @subjects = sort keys $targets{$crispr}; # @subjects == BLAST subject instances in Hash of Arrays of Hash
+
         foreach my $subject (@subjects) { # iterate through each BLAST subject instance
             my @ids = sortIdentities( $targets->{$crispr}{$subject}{'info'} ); # get sorted list of all BLAST hits (and for all subjects) for each CRISPR query
+            my @identities;
             push @identities, @ids; # push identities list for each subject
 
             # Remove duplicates
