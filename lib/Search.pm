@@ -183,7 +183,7 @@ sub blast {
             # next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
 
             my @result = split('\t', $blastResult);
-            my $crispr = $result[0]; # CRISPR sequence name ex.) 'CRISPR_0'
+            my ($crispr) = $result[0] =~ /(.*):\d+/; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
             $info = { #anonymous hash with BLAST info for each match
                 'sseqid'    => $result[1],
                 'qstart'    => $result[2],

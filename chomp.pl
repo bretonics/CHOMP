@@ -182,7 +182,7 @@ sub writeCRPfile {
                 $sequence = $down . $sequence . $up;
             }
 
-            # # Get all details to print to file
+            # Get all details to print to file
             my $strand      = $CRISPRS->{$crispr}{'strand'};
             my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
             my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'unqIdentities'} } ); # get string of identities
