@@ -8,6 +8,8 @@ our @EXPORT_OK = qw(blast); #functions for explicit export
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Carp;
 
+use Bio::Seq; use Bio::SeqIO;
+
 use MyConfig; use MyIO;
 
 use Data::Dumper;
@@ -83,6 +85,8 @@ sub findOligo {
     my $go = sub {
             my ($sequence, $strand) = @_;
 
+            say "Searching CRISPR sequences on $strand strand";
+
             my $seqLen = length($sequence);
             my ($gRNA, $PAM, $content, $contentG, $contentC, $GC);
 
@@ -135,9 +139,13 @@ sub findOligo {
 
     Arg [1]     : CRISPR hash reference returned in findOligo sub
 
-    Arg [2]     : Sequence from sequence file provided for search
+    Arg [2]     : Arrays with sequence file(s) provided for search
 
-    Arg [3]     : Window size of CRISPR target provided
+    Arg [3]     : HTML output (T/F)
+
+    Arg [4]     : Output file name
+
+    Arg [5]     : Output directory
 
     Example     : blast(\%CRISPRS, $SEQ, $WINDOWSIZE)
 
@@ -149,51 +157,77 @@ sub findOligo {
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, $SUBJSEQ, $WINDOWSIZE, $HTML)';
-    @_ == 4 or confess wrongNumberArguments(), $filledUsage;
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, \@SUBJSEQS, $HTML, $OUTFILE, $OUTDIR)';
+    @_ == 5 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRPfile, $SUBJSEQ, $wordSize, $HTML) = @_;
+    my ($CRPfile, $SUBJSEQS, $HTML, $OUTFILE, $OUTDIR) = @_;
+    my @SUBJSEQS = @$SUBJSEQS;
     my (%targets, $info);
-    $wordSize = 7;
-    # $wordSize = sprintf "%.0f", ($wordSize/2); #Make wordSize == 1/2 of WINDOWSIZE when searching BLAST hits
 
-    # Use 'blastn-short' settings for sequences shorter than 30 nucleotides
-    my $BLASTCMD = "blastn -query $CRPfile -subject $SUBJSEQ -word_size $wordSize -outfmt \"6 qseqid sseqid qstart qend sstart send sstrand pident nident\"";
+    my $wordSize = 7;
+    mkDir("$OUTDIR/blast");
 
-    open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
-    while ( my $blastResult = <BLAST> ) {
-        my ($nident) = $blastResult =~ /(\d+)$/; # get number of identical matches
-        # next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
 
-        my @result = split('\t', $blastResult);
-        my ($crispr) = $result[0] =~ m/(.+):\d+/; # CRISPR sequence name ex.) 'CRISPR_0' instead of 'CRISPR_0:0'
+    foreach my $subject (@SUBJSEQS) {
+        my $subjName = _getSeqName($subject);
+        my $outFile = "$OUTDIR/blast/$subjName\_$OUTFILE\_blast.html";
 
-        $info = { #anonymous hash with BLAST info for each match
-            'sseqid'    => $result[1],
-            'qstart'    => $result[2],
-            'qend'      => $result[3],
-            'sstart'    => $result[4],
-            'send'      => $result[5],
-            'sstrand'   => $result[6],
-            'pident'    => $result[7],
-            'nident'    => $result[8],
-        };
-        # Hash of Array of Hashes to store BLAST results for each query
-        # -- Hash key == CRISRP name
-        # -- Array accounts for multiple hits for each CRISPR sequence
-        # -- Hash contains BLAST match info
-        push @{ $targets{$crispr} } , $info;
-    } close BLAST;
+        say "Searching CRISPR targets against $subject";
 
-    my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $SUBJSEQ -word_size $wordSize -out blast.html -html";
-    `$BLASTCMD_HTML` if($HTML);
+        # Use 'blastn-short' settings for sequences shorter than 30 nucleotides
+        my $BLASTCMD = "blastn -query $CRPfile -subject $subject -word_size $wordSize -outfmt \"6 qseqid sseqid qstart qend sstart send sstrand pident nident\"";
+
+        open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
+        while ( my $blastResult = <BLAST> ) {
+            my ($nident) = $blastResult =~ /(\d+)$/; #get number of identical matches
+            # next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
+
+            my @result = split('\t', $blastResult);
+            my ($crispr) = $result[0] =~ /(.*):\d+/; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
+            $info = { #anonymous hash with BLAST info for each match
+                'sseqid'    => $result[1],
+                'qstart'    => $result[2],
+                'qend'      => $result[3],
+                'sstart'    => $result[4],
+                'send'      => $result[5],
+                'sstrand'   => $result[6],
+                'pident'    => $result[7],
+                'nident'    => $result[8],
+            };
+            # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
+            # -- Hash key == CRISRP name
+            # -- Hash key == Subject name
+            # -- Hash key == 'info'
+            # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
+            # -- Hash contains BLAST match info
+                push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
+        } close BLAST;
+
+        # BLAST HTML output if called
+        if($HTML) {
+          my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $subject -word_size $wordSize -out $outFile -html";
+          `$BLASTCMD_HTML` ;
+          say "\tBLAST file saved: $outFile";
+        }
+    }
 
     return(\%targets);
 }
 
-
 #-------------------------------------------------------------------------------
 # HELPERS
+
+sub _getSeqName {
+    my ($seq) = @_;
+
+    # Sequence OO
+    my $seqInObj    = Bio::SeqIO->new(-file => $seq, -alphabet => "dna");
+    my $format      = $seqInObj->_guess_format($seq); #check format of input file
+    my $seqObj      = $seqInObj->next_seq;
+    my $name        = $seqObj->display_id;
+
+    return $name;
+}
 
 
 =head1 COPYRIGHT AND LICENSE
