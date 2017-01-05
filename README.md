@@ -37,7 +37,7 @@ Will report how many occurrences of this sequence are present in the target sequ
 ## Output
 Writes 2 files under the default directory **./CRISPRS**:
 
-##### **.FASTA** file with each CRISPR sequence found
+#### **'.FASTA'** file with each CRISPR sequence found
 
 
     >CRISPR_0:0
@@ -52,26 +52,9 @@ Writes 2 files under the default directory **./CRISPRS**:
     AAAAATCCCATCGATCTAGCAGG
     >CRISPR_5:154
     TCCCATCGATCTAGCAGGCCCGG
-    >CRISPR_6:192
-    CGAAAAAAAATTTTCCCTATCGG
-    >CRISPR_7:193
-    GAAAAAAAATTTTCCCTATCGGG
-    >CRISPR_8:194
-    AAAAAAAATTTTCCCTATCGGGG
-    >CRISPR_9:195
-    AAAAAAATTTTCCCTATCGGGGG
-    >CRISPR_10:0
-    CTATAGCATGGGCCCCCGATAGG
-    >CRISPR_11:1
-    TATAGCATGGGCCCCCGATAGGG
-    >CRISPR_12:34
-    TTCGTCATGCATGCTCGCTCCGG
-    >CRISPR_13:35
-    TCGTCATGCATGCTCGCTCCGGG
-    >CRISPR_14:51
-    CTCCGGGCCTGCTAGATCGATGG
-    >CRISPR_15:52
-    TCCGGGCCTGCTAGATCGATGGG
+    .
+    .
+    .
     >CRISPR_16:99
     ATAGTACGTGATCACAGTCATGG
 
@@ -79,9 +62,9 @@ Suffix digit after '**:**' denotes nucleotide position in sequence where crispr 
 , crispr was found starting at nucleotide position **99** in `-seq` sequence.
 
 
-##### **.txt** report with each CRISPR sequence details
+#### **'.txt'** report with each CRISPR sequence details
 
-Will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with base pairs matched (identities). You can use that to determine which CRISPR target is best to use.
+- CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which CRISPR target is best to use.
 
 | Name | Sequence | Strand | Subject | Start | Occurrences | Identities
 | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- |
@@ -103,5 +86,7 @@ Will report how many occurrences of this sequence are present in the target sequ
 | CRISPR_16 | ATAGTACGTGATCACAGTCATGG | reverse | test | 131 | 2 | 8
 | CRISPR_3 | TGTGATCACGTACTATTATGCGG | plus | test | 116 | 2 | 8
 
+>Table is sorted in decreasing order using top identity for each CRISPR sequence, then sorted by number of occurrences, in current subject.
 
-Will also write a **blast** directory under `-outdir` if `-html` option set.
+#### BLAST
+Will also write a **blast** results directory under `-outdir` if `-html` option set.
