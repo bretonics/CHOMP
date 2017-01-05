@@ -155,18 +155,15 @@ sub writeCRPfile {
     my $FH = getFH(">", $outFile);
     say $FH "Name\tSequence\tStrand\tSubject\tStart\tOccurrences\tIdentities";
 
-    my ($crisprs, $subjects, $sortedCRISPRS, $details) = sortResults(\%targets);
-    # my @crisprs         = @$crisprs;
+    my ($subjects, $sortedCRISPRS, $details) = sortResults(\%targets);
     my @subjects        = @$subjects;
     my %sortedCRISPRS   = %$sortedCRISPRS;
     my %details         = %$details;
 
 
     # Get ordered CRISPR sequences + info to print
-    my ($sorted) = values %sortedCRISPRS;
-    my @sorted = @$sorted;
-    foreach my $crispr (@sorted) {
-        foreach my $subject (@subjects) {
+    foreach my $subject (@subjects) {
+        foreach my $crispr ( @{$sortedCRISPRS{$subject}} ) {
             my $sequence = $CRISPRS->{$crispr}->{'sequence'};
 
             # Complete oligo sequence:
@@ -276,7 +273,7 @@ sub sortResults {
 
     my ($targetsRef) = @_;
     my %targets = %$targetsRef;
-    my @crisprs = sort keys %targets;
+    my @crisprs = keys %targets;
     my (@subjects, @sorted, %sortedCRISPRS, %details);
 
     # Get number of occurrences from BLAST call per CRISPR target in %targets Hash of Hashes of Array of Hashes
@@ -327,7 +324,7 @@ sub sortResults {
         $sortedCRISPRS{$subject} = \@sorted;
     }
 
-    return (\@crisprs, \@subjects, \%sortedCRISPRS, \%details);
+    return (\@subjects, \%sortedCRISPRS, \%details);
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
