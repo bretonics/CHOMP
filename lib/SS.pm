@@ -17,7 +17,7 @@ sub ss {
     @_ == 2 or confess wrongNumberArguments(), $filledUsage;
 
     my ($name, $sequence) = @_;
-    my $outFile = "ss/$name";
+    my $outFile = "$main::OUTDIR/ss/$name";
     my $rnaPlot = "$outFile\_rna.ps";
     my $dotPlot = "$outFile\_dot.ps";
     my $rssPlot = "$outFile\_rss.ps";
@@ -27,7 +27,7 @@ sub ss {
     RNA::PS_dot_plot($sequence, $dotPlot);       # write dot plot to dot.ps
 
     my $command = "relplot.pl $rnaPlot $dotPlot > $rssPlot";
-    say "Running relative secondary structure command '$command'";
+    say "Running relative secondary structure command --> '$command'";
     `$command`;
 
     return;
