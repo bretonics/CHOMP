@@ -31,7 +31,7 @@ our $WINDOWSIZE  = 23;
 my $SS;
 my $OUTFILE;
 our $OUTDIR = 'CRISPRS';
-my $HTML;
+our $HTML;
 my $VERBOSE;
 
 my $USAGE       = "\n\n$0 [options]\n
@@ -79,7 +79,7 @@ my @SUBJSEQS; # sequence file to use in BLAST search
 mkDir($OUTDIR); mkDir("$OUTDIR/ss") if($SS);
 my ($CRISPRS, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE); # CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
-my $targets             = Search::blast($CRPfile, \@SUBJSEQS, $HTML, $OUTFILE, $OUTDIR); # CRISPR target hits
+my $targets             = Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE, $OUTDIR); # CRISPR target hits
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------

@@ -141,11 +141,9 @@ sub findOligo {
 
     Arg [2]     : Arrays with sequence file(s) provided for search
 
-    Arg [3]     : HTML output (T/F)
+    Arg [3]     : Output file name
 
-    Arg [4]     : Output file name
-
-    Arg [5]     : Output directory
+    Arg [4]     : Output directory
 
     Example     : blast(\%CRISPRS, $SEQ, $WINDOWSIZE)
 
@@ -157,16 +155,15 @@ sub findOligo {
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, \@SUBJSEQS, $HTML, $OUTFILE, $OUTDIR)';
-    @_ == 5 or confess wrongNumberArguments(), $filledUsage;
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, \@SUBJSEQS, $OUTFILE, $OUTDIR)';
+    @_ == 4 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRPfile, $SUBJSEQS, $HTML, $OUTFILE, $OUTDIR) = @_;
+    my ($CRPfile, $SUBJSEQS, $OUTFILE, $OUTDIR) = @_;
     my @SUBJSEQS = @$SUBJSEQS;
     my (%targets, $info);
 
     my $wordSize = 7;
     mkDir("$OUTDIR/blast");
-
 
     foreach my $subject (@SUBJSEQS) {
         my $subjName = _getSeqName($subject);
@@ -204,10 +201,10 @@ sub blast {
         } close BLAST;
 
         # BLAST HTML output if called
-        if($HTML) {
-          my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $subject -word_size $wordSize -out $outFile -html";
-          `$BLASTCMD_HTML` ;
-          say "\tBLAST file saved: $outFile";
+        if("$main::HTML") {
+            my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $subject -word_size $wordSize -out $outFile -html";
+            `$BLASTCMD_HTML` ;
+            say "\tBLAST file saved: $outFile";
         }
     }
 
