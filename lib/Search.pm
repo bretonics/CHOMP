@@ -201,7 +201,7 @@ sub blast {
         } close BLAST;
 
         # BLAST HTML output if called
-        if("$main::HTML") {
+        if($main::HTML) {
             my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $subject -word_size $wordSize -out $outFile -html";
             `$BLASTCMD_HTML` ;
             say "\tBLAST file saved: $outFile";
