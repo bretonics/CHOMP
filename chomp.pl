@@ -213,7 +213,7 @@ sub getSeqDetails {
     my $seqInObj    = Bio::SeqIO->new(-file => $seqFile, -alphabet => "dna");
     my $format      = $seqInObj->_guess_format($seqFile); #check format of input file
     my $seqObj      = $seqInObj->next_seq;
-    my $sequence    = $seqObj->seq;
+    my $sequence    = uc $seqObj->seq;
     my $reverse     = $seqObj->revcom->seq;
 
     my %seqInfo = (
