@@ -153,7 +153,7 @@ sub writeCRPfile {
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", $outFile);
-    say $FH "Name\tSequence\tStrand\tSubject\tStart\tOccurrences\tIdentities";
+    say $FH "Name\tPosition\tSequence\tStrand\tSubject\tStart\tOccurrences\tIdentities";
 
     my ($subjects, $sortedCRISPRS, $details) = sortResults(\%targets);
     my @subjects        = @$subjects;
@@ -181,11 +181,12 @@ sub writeCRPfile {
             }
 
             # Get all details to print to file
+            my $position    = $CRISPRS->{$crispr}{'start'}; #CRISPR sequence position
             my $strand      = $CRISPRS->{$crispr}{'strand'};
             my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
             my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'unqIdentities'} } ); # get string of identities
             my $sStart      = @{ $targets{$crispr}{$subject}{'info'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
-            say $FH "$crispr\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
+            say $FH "$crispr\t$position\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
     }
 
@@ -213,8 +214,8 @@ sub getSeqDetails {
     my $seqInObj    = Bio::SeqIO->new(-file => $seqFile, -alphabet => "dna");
     my $format      = $seqInObj->_guess_format($seqFile); #check format of input file
     my $seqObj      = $seqInObj->next_seq;
-    my $sequence    = $seqObj->seq;
-    my $reverse     = $seqObj->revcom->seq;
+    my $sequence    = uc $seqObj->seq;
+    my $reverse     = uc $seqObj->revcom->seq;
 
     my %seqInfo = (
         'seqInObj'  => $seqInObj,
