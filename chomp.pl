@@ -2,13 +2,13 @@
 
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Getopt::Long; use Pod::Usage;
-use FindBin; use lib "$FindBin::RealBin/lib";
 use Readonly;
 use Bio::Seq; use Bio::SeqIO;
+use FindBin; use lib "$FindBin::RealBin/lib";
 use Search; use SS; # lib modules
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers;
-use Data::Dumper;
+
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -76,7 +76,6 @@ my @SUBJSEQS; # sequence file to use in BLAST search
 
 #-------------------------------------------------------------------------------
 # CALLS
-mkDir($OUTDIR); mkDir("$OUTDIR/ss") if($SS);
 my ($CRISPRS, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE); # CRISPR HoH and sequences array references
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE, $OUTDIR); # CRISPR target hits
@@ -130,6 +129,8 @@ sub setParameters {
         die 'Could not determine which file(s) to use as search sequence.'
     }
 
+    mkDir($OUTDIR); mkDir("$OUTDIR/ss") if($SS);
+    
     return;
 }
 
@@ -321,7 +322,7 @@ sub sortResults {
 
     # Return sorted CRISPR names based on lowest identity base pair matches, then occurrences
     foreach my $subject ( @subjects ) { # iterate through each subject
-        my @sorted = ( sort { $details{$b}{$subject}{'unqIdentities'}[0] <=> $details{$a}{$subject}{'unqIdentities'}[0] || $details{$a}{$subject}{'occurrences'} <=> $details{$b}{$subject}{'occurrences'} } @crisprs );
+        my @sorted = ( sort { $details{$a}{$subject}{'unqIdentities'}[0] <=> $details{$b}{$subject}{'unqIdentities'}[0] || $details{$a}{$subject}{'occurrences'} <=> $details{$b}{$subject}{'occurrences'} } @crisprs );
         $sortedCRISPRS{$subject} = \@sorted;
     }
 
