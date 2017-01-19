@@ -9,7 +9,7 @@ use strict; use warnings; use diagnostics; use feature qw(say);
 use Carp;
 
 use Bio::Seq; use Bio::SeqIO;
-
+use Bio::Tools::Run::StandAloneBlastPlus;
 use MyConfig; use MyIO;
 
 use Data::Dumper;
@@ -171,41 +171,37 @@ sub blast {
 
         say "Searching CRISPR targets against $subject";
 
-        # Use 'blastn-short' settings for sequences shorter than 30 nucleotides
-        my $BLASTCMD = "blastn -query $CRPfile -subject $subject -word_size $wordSize -outfmt \"6 qseqid sseqid qstart qend sstart send sstrand pident nident\"";
+        my $fac = Bio::Tools::Run::StandAloneBlastPlus->new(
+                    -db_data    => $subject,
+                );
 
-        open(BLAST, "$BLASTCMD |") or die "Can't open BLAST commmand <$BLASTCMD>", $!;
-        while ( my $blastResult = <BLAST> ) {
-            my ($nident) = $blastResult =~ /(\d+)$/; #get number of identical matches
-            # next if ($nident < $wordSize); #skip if match has low identity matches ( < half of $WINDOWSIZE )
+        my $result = $fac->blastn(  -query      => $CRPfile,
+                                    -outfile    => $outFile,
+                                    -method_args => [ -word_size => 7],
+                                );
+        $fac->cleanup;
 
-            my @result = split('\t', $blastResult);
-            my ($crispr) = $result[0] =~ /(.*):\d+/; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
-            $info = { #anonymous hash with BLAST info for each match
-                'sseqid'    => $result[1],
-                'qstart'    => $result[2],
-                'qend'      => $result[3],
-                'sstart'    => $result[4],
-                'send'      => $result[5],
-                'sstrand'   => $result[6],
-                'pident'    => $result[7],
-                'nident'    => $result[8],
-            };
-            # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
-            # -- Hash key == CRISRP name
-            # -- Hash key == Subject name
-            # -- Hash key == 'info'
-            # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
-            # -- Hash contains BLAST match info
-                push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
-        } close BLAST;
+        #     my ($crispr) = $result[0] =~ /(.*):\d+/; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
+        #     $info = { #anonymous hash with BLAST info for each match
+        #         'sseqid'    => $result[1],
+        #         'qstart'    => $result[2],
+        #         'qend'      => $result[3],
+        #         'sstart'    => $result[4],
+        #         'send'      => $result[5],
+        #         'sstrand'   => $result[6],
+        #         'pident'    => $result[7],
+        #         'nident'    => $result[8],
+        #     };
+        #     # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
+        #     # -- Hash key == CRISRP name
+        #     # -- Hash key == Subject name
+        #     # -- Hash key == 'info'
+        #     # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
+        #     # -- Hash contains BLAST match info
+        #         push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
+        # }
 
-        # BLAST HTML output if called
-        if($main::HTML) {
-            my $BLASTCMD_HTML = "blastn -query $CRPfile -subject $subject -word_size $wordSize -out $outFile -html";
-            `$BLASTCMD_HTML` ;
-            say "\tBLAST file saved: $outFile";
-        }
+        say "\tBLAST files saved in: ";
     }
 
     return(\%targets);
@@ -226,6 +222,9 @@ sub _getSeqName {
     return $name;
 }
 
+# sub _blastCheck {
+#     my ($) = @_;
+# }
 
 =head1 COPYRIGHT AND LICENSE
 
