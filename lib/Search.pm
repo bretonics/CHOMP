@@ -187,55 +187,47 @@ sub blast {
         # Process each CRISPR
         while ( my $result = $fac->next_result ) {
             my ($crispr) = $result->query_name =~ /(.*):\d+/;; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
-            say $crispr;
+# say $crispr;
             # Process each CRISPR hit
             while ( my $hit = $result->next_hit ) {
-                my $subjectName = $hit->name;
+# my $subjectName = $hit->name;
                 # Process each match (HSP) in iterative fashion
                 while( my $hsp = $hit->next_hsp ) {
-                    # say Dumper $hsp;
+                    # Get all values and store in hashes
+                    my $qstart  = $hsp->start('query');
+                    my $qend    = $hsp->end('query');
+                    my $sseqid  = $hit->name;
+                    my $sstart  = $hsp->start('hit');
+                    my $send    = $hsp->end('hit');
+                    my $sstrand = $hsp->strand('hit');
+                    my $pident  = $hsp->percent_identity;
+                    my $nident  = $hsp->num_identical;
+                    my $gaps    = $hsp->gaps;
 
-                    say $hsp->rank;
-                    say $hsp->strand('query');
-                    say $hsp->start('query');
-                    say $hsp->end('query');
+                    $info = { #anonymous hash with BLAST info for each match
 
-                    say $hsp->strand('subject');
-                    say $hsp->start('subject');
-                    say $hsp->end('subject');
-
-                    say $hsp->num_identical;
-                    say $hsp->num_conserved;
-                    print "\n";
-
-                    #     $info = { #anonymous hash with BLAST info for each match
-                    #         'sseqid'    => $result[1],
-                    #         'qstart'    => $result[2],
-                    #         'qend'      => $result[3],
-                    #         'sstart'    => $result[4],
-                    #         'send'      => $result[5],
-                    #         'sstrand'   => $result[6],
-                    #         'pident'    => $result[7],
-                    #         'nident'    => $result[8],
-                    #     };
-                    #     # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
-                    #     # -- Hash key == CRISRP name
-                    #     # -- Hash key == Subject name
-                    #     # -- Hash key == 'info'
-                    #     # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
-                    #     # -- Hash contains BLAST match info
-                    #         push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
-                    # }
+                        'qstart'    => $qstart,
+                        'qend'      => $qend,
+                        'sseqid'    => $sseqid,
+                        'sstart'    => $sstart,
+                        'send'      => $send,
+                        'sstrand'   => $sstrand,
+                        'pident'    => $pident,
+                        'nident'    => $nident,
+                    };
+                        # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
+                        # -- Hash key == CRISRP name
+                        # -- Hash key == Subject name
+                        # -- Hash key == 'info'
+                        # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
+                        # -- Hash contains BLAST match info
+                            push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
+                    }
                 }
-                next;
             }
+            $fac->cleanup;
         }
-
-        $fac->cleanup;
-
-        say "\tBLAST files saved in: ";
-    }
-
+    say "\tBLAST files saved in: '$OUTDIR/blast' ";
     return(\%targets);
 }
 
