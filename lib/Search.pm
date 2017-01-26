@@ -137,15 +137,15 @@ sub findOligo {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
 
-    Arg [1]     : CRISPR hash reference returned in findOligo sub
+    Arg [1]     : CRISPR fasta file
 
-    Arg [2]     : Arrays with sequence file(s) provided for search
+    Arg [2]     : Arrays with subject sequence file(s) provided for search
 
     Arg [3]     : Output file name
 
     Arg [4]     : Output directory
 
-    Example     : blast(\%CRISPRS, $SEQ, $WINDOWSIZE)
+    Example     : Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE);
 
     Description : Run BLAST+ search for CRISPR targets
 
@@ -155,19 +155,20 @@ sub findOligo {
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, \@SUBJSEQS, $OUTFILE, $OUTDIR)';
-    @_ == 4 or confess wrongNumberArguments(), $filledUsage;
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, \@SUBJSEQS, $OUTFILE)';
+    @_ == 3 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRPfile, $SUBJSEQS, $OUTFILE, $OUTDIR) = @_;
+    my ($CRPfile, $SUBJSEQS, $OUTFILE) = @_;
     my @SUBJSEQS = @$SUBJSEQS;
     my (%targets, $info);
-
+    my $outDir = $main::OUTDIR;
     my $wordSize = 7;
-    mkDir("$OUTDIR/blast");
+
+    mkDir("$outDir/blast");
 
     foreach my $subject (@SUBJSEQS) {
         my $subjName = _getSeqName($subject);
-        my $outFile = "$OUTDIR/blast/$subjName\_$OUTFILE\.blast";
+        my $outFile = "$outDir/blast/$subjName\_$OUTFILE\.blast";
 
         say "Searching CRISPR targets against $subject";
 
@@ -184,13 +185,12 @@ sub blast {
 
         # Rewind to beginning of results and get all
         $fac->rewind_results;
+
         # Process each CRISPR
         while ( my $result = $fac->next_result ) {
             my ($crispr) = $result->query_name =~ /(.*):\d+/;; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
-# say $crispr;
             # Process each CRISPR hit
             while ( my $hit = $result->next_hit ) {
-# my $subjectName = $hit->name;
                 # Process each match (HSP) in iterative fashion
                 while( my $hsp = $hit->next_hsp ) {
                     # Get all values and store in hashes
@@ -204,8 +204,7 @@ sub blast {
                     my $nident  = $hsp->num_identical;
                     my $gaps    = $hsp->gaps;
 
-                    $info = { #anonymous hash with BLAST info for each match
-
+                    $info = { # anonymous hash with BLAST info for each match
                         'qstart'    => $qstart,
                         'qend'      => $qend,
                         'sseqid'    => $sseqid,
@@ -215,19 +214,20 @@ sub blast {
                         'pident'    => $pident,
                         'nident'    => $nident,
                     };
-                        # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
-                        # -- Hash key == CRISRP name
-                        # -- Hash key == Subject name
-                        # -- Hash key == 'info'
-                        # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
-                        # -- Hash contains BLAST match info
-                            push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
-                    }
+
+                    # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
+                    # -- Hash key == CRISRP name
+                    # -- Hash key == Subject name
+                    # -- Hash key == 'info'
+                    # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
+                    # -- Hash contains BLAST match info
+                    push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
                 }
             }
-            $fac->cleanup;
         }
-    say "\tBLAST files saved in: '$OUTDIR/blast' ";
+        $fac->cleanup; #clean up temp files
+    }
+    say "\tBLAST files saved in: '$outDir/blast' ";
     return(\%targets);
 }
 
