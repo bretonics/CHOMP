@@ -226,6 +226,7 @@ sub blast {
                         'rank'          => $hsp->rank,
                         'qstart'        => $hsp->start('query'),
                         'qend'          => $hsp->end('query'),
+                        'qstrand'       => $hsp->strand('query'),
                         'sstart'        => $hsp->start('hit'),
                         'send'          => $hsp->end('hit'),
                         'sstrand'       => $hsp->strand('hit'),
