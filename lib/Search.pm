@@ -188,46 +188,57 @@ sub blast {
 
         # Process each CRISPR
         while ( my $result = $fac->next_result ) {
-            my ($crispr) = $result->query_name =~ /(.*):\d+/;; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
+            my ($crispr)    = $result->query_name =~ /(.*):\d+/;; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
+            my $numHits     = $result->num_hits;
+
+            # Resolve when CRISPR target has no matches
+            say "\t$crispr has 0 hits here" if ($numHits == 0);
+
+            $info = { # anonymous hash with BLAST info for each match
+                'crispr'    => $crispr,
+                'numhits'   => $numHits,
+                'qstart'    => "0",
+                'qend'      => "0",
+                'sseqid'    => "0",
+                'sstart'    => "0",
+                'send'      => "0",
+                'sstrand'   => "0",
+                'pident'    => "0",
+                'nident'    => "0",
+                'gaps'      => "0",
+            };
+
             # Process each CRISPR hit
             while ( my $hit = $result->next_hit ) {
                 # Process each match (HSP) in iterative fashion
                 while( my $hsp = $hit->next_hsp ) {
-                    # Get all values and store in hashes
-                    my $qstart  = $hsp->start('query');
-                    my $qend    = $hsp->end('query');
-                    my $sseqid  = $hit->name;
-                    my $sstart  = $hsp->start('hit');
-                    my $send    = $hsp->end('hit');
-                    my $sstrand = $hsp->strand('hit');
-                    my $pident  = $hsp->percent_identity;
-                    my $nident  = $hsp->num_identical;
-                    my $gaps    = $hsp->gaps;
-
-                    $info = { # anonymous hash with BLAST info for each match
-                        'qstart'    => $qstart,
-                        'qend'      => $qend,
-                        'sseqid'    => $sseqid,
-                        'sstart'    => $sstart,
-                        'send'      => $send,
-                        'sstrand'   => $sstrand,
-                        'pident'    => $pident,
-                        'nident'    => $nident,
+                    # Get all values to store in hashes
+                    $info = {
+                        'crispr'    => $crispr,
+                        'numhits'   => $numHits,
+                        'qstart'    => $hsp->start('query'),
+                        'qend'      => $hsp->end('query'),
+                        'sseqid'    => $hit->name,
+                        'sstart'    => $hsp->start('hit'),
+                        'send'      => $hsp->end('hit'),
+                        'sstrand'   => $hsp->strand('hit'),
+                        'pident'    => $hsp->percent_identity,
+                        'nident'    => $hsp->num_identical,
+                        'gaps'      => $hsp->gaps,
                     };
-
-                    # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
-                    # -- Hash key == CRISRP name
-                    # -- Hash key == Subject name
-                    # -- Hash key == 'info'
-                    # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
-                    # -- Hash contains BLAST match info
-                    push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
                 }
             }
+            # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
+            # -- Hash key == CRISRP name
+            # -- Hash key == Subject name
+            # -- Hash key == 'info'
+            # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
+            # -- Hash contains BLAST match info
+            push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
         }
         $fac->cleanup; #clean up temp files
     }
-    say "\tBLAST files saved in: '$outDir/blast' ";
+    say "\nBLAST files saved in: '$outDir/blast' ";
     return(\%targets);
 }
 

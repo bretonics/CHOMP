@@ -8,7 +8,7 @@ use FindBin; use lib "$FindBin::RealBin/lib";
 use Search; use SS; # lib modules
 # Own Modules (https://github.com/bretonics/Modules)
 use MyConfig; use MyIO; use Handlers;
-
+use Data::Dumper;
 # ==============================================================================
 #
 #   CAPITAN:        Andres Breton, http://andresbreton.com
@@ -165,6 +165,9 @@ sub writeCRPfile {
     # Get ordered CRISPR sequences + info to print
     foreach my $subject (@subjects) {
         foreach my $crispr ( @{$sortedCRISPRS{$subject}} ) {
+            # Handle CRISPR sequences having 'No hits'
+            next if ( @{ $targets{$crispr}{$subject}{'info'} }[0]->{'numhits'} == 0 );
+
             my $sequence = $CRISPRS->{$crispr}->{'sequence'};
 
             # Complete oligo sequence:
@@ -189,7 +192,7 @@ sub writeCRPfile {
             my $sStart      = @{ $targets{$crispr}{$subject}{'info'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
             say $FH "$crispr\t$position\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
-    }
+    } close $FH;
 
     say "CRISPRs file written to $outFile";
     return;
