@@ -71,7 +71,7 @@ my $AUTHOR = 'Andres Breton, <dev@andresbreton.com>';
 
 my $REALBIN = $FindBin::RealBin;
 
-my ($seqDetails)    = getSeqDetails($SEQ);
+my ($seqDetails) = getSeqDetails($SEQ);
 my @SUBJSEQS; # sequence file to use in BLAST search
 
 #-------------------------------------------------------------------------------
@@ -290,12 +290,8 @@ sub sortResults {
         @subjects = sort keys $targets{$crispr}; # @subjects == BLAST subject instances in Hash of Arrays of Hash
 
         foreach my $subject (@subjects) { # iterate through each BLAST subject instance
-
-            # Handle CRISPR sequences having 'No hits'
-            if ( @{ $targets{$crispr}{$subject}{'info'} }[0]->{'numhits'} == 0 ) {
-                push @noHits, $crispr; # to be deleted from @crisprs
-                next; # skip sorting
-            }
+            # Handle CRISPR sequences having 'No hits', skip sorting
+            next if ( @{ $targets{$crispr}{$subject}{'info'} }[0]->{'numhits'} == 0 );
 
             my @identities;
             my @ids = sortIdentities( $targets->{$crispr}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each CRISPR query
@@ -328,12 +324,11 @@ sub sortResults {
         }
     }
 
-    # Get only CRISPRs having hits, remove others
-    my %remove = map { $_ => 1 } @noHits;
-    my @crisprsHit = grep { !$remove{$_} } @crisprs;
-
     # Return sorted CRISPR names based on lowest identity base pair matches, then occurrences
-    foreach my $subject ( @subjects ) { # iterate through each subject
+    foreach my $subject ( @subjects ) {
+        # Get only CRISPRs having hits in current subject, remove others
+        my @crisprsHit = grep { @{ $targets{$_}{$subject}{'info'} }[0]->{'numhits'} != 0 } @crisprs;
+
         my @sorted = ( sort { $details{$a}{$subject}{'unqIdentities'}[0] <=> $details{$b}{$subject}{'unqIdentities'}[0] || $details{$a}{$subject}{'occurrences'} <=> $details{$b}{$subject}{'occurrences'} } @crisprsHit );
         $sortedCRISPRS{$subject} = \@sorted;
     }
