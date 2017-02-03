@@ -1,6 +1,7 @@
 # CHOMP 🐊
 
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f63b7eb0e4334fad92e6918abb3fefe0)](https://www.codacy.com/app/bretonics/CHOMP?utm_source=github.com&utm_medium=referral&utm_content=bretonics/CHOMP&utm_campaign=badger)
 [![GitHub version](https://badge.fury.io/gh/bretonics%2FCHOMP.svg)](http://badge.fury.io/gh/bretonics%2FCHOMP)
 [![Github Issues](http://githubbadges.herokuapp.com/bretonics/CHOMP/issues)](https://github.com/bretonics/CHOMP/issues)
 [![Pending Pull-Requests](http://githubbadges.herokuapp.com/bretonics/CHOMP/pulls)](https://github.com/bretonics/CHOMP/pulls)
