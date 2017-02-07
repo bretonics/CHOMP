@@ -12,7 +12,6 @@ use Bio::Seq; use Bio::SeqIO;
 use Bio::Tools::Run::StandAloneBlastPlus;
 use MyConfig; use MyIO;
 
-use Data::Dumper;
 
 # ==============================================================================
 #
