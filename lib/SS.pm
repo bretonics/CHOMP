@@ -10,8 +10,61 @@ use Carp;
 
 use MyConfig; use MyIO;
 
-use RNA; #ViennaRNA
+use RNA; # ViennaRNA
 
+# ==============================================================================
+#
+#   CAPITAN:        Andres Breton
+#   FILE:           SSpm
+#   LICENSE:        [LICENSE]
+#   USAGE:          Predict RNA secondary structures
+#   DEPENDENCIES:   ViennaRNA (http://www.tbi.univie.ac.at/RNA/)
+#
+# ==============================================================================
+
+=head1 NAME
+
+SS - package for prediction and comparison of RNA secondary structures using ViennaRNA
+
+=head1 SYNOPSIS
+
+Creation:
+    use SS;
+
+=head1 DESCRIPTION
+
+    This module is designed to predictic secondary structures of nucleotide sequences using ViennaRNA package
+
+=head1 EXPORTS
+
+=head2 Default Behaviors
+
+Exports ss subroutine by default
+
+use SS;
+
+=head1 FUNCTIONS
+
+=cut
+
+#-------------------------------------------------------------------------------
+# MAIN
+
+=head2 ss
+
+    Arg [1]     : Name string
+
+    Arg [2]     : Sequence string
+
+    Example     : ss($name, $sequence)
+
+    Description : Predict secondary structures and output plots
+
+    Returntype  : undef
+
+    Status      : Stable
+
+=cut
 sub ss {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '($name, $sequence)';
     @_ == 2 or confess wrongNumberArguments(), $filledUsage;
@@ -33,4 +86,25 @@ sub ss {
 
     return;
 }
+
+=head1 COPYRIGHT AND LICENSE
+
+    Andres Breton (C)
+
+    [LICENSE]
+
+    =head1 CONTACT
+
+    Please email comments or questions to Andres Breton, me@andresbreton.com
+
+    =head1 SETTING PATH
+
+    If PERL5LIB was not set, do something like this:
+
+    use FindBin; use lib "$FindBin::RealBin/lib";
+
+    This finds and uses subdirectory 'lib' in current directoy as library location
+
+=cut
+
 1;
