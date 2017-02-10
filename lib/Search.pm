@@ -93,19 +93,14 @@ sub findOligo {
                 my $window = substr $sequence, $i, $windowSize;
 
                 # LAST STEP: When DONE LOOKING UP -- Return CRISPR sequences and information
-                if ( length($window) < $windowSize ) { #don't go out of bounds when at end of sequence
-                    foreach my $name (keys %CRISPRS) {
-                        my $crispr = $CRISPRS{$name}{'gRNA'} . $CRISPRS{$name}{'PAM'}; #join gRNA + PAM sequence
-                        $CRISPRS{$name}{'sequence'} = $crispr; # add CRISPR sequence (gRNA + PAM) to each hash
-                        push @CRPseqs, $crispr # push each N-oligomer CRISPR seq to array
-                    }
-                    # Return references of HoH containing all CRISPR instances found and respective information for each + array with the all CRISPR sequences joined (kmer gRNA + PAM)
-                    return(\%CRISPRS, \@CRPseqs);
-                };
+                # Returns references of HoH containing all CRISPR instances found and
+                # respective information for each
+                return(\%CRISPRS) if ( length($window) < $windowSize ); # don't go out of bounds when at end of sequence
 
                 if ($window =~ /(.+)(.GG)$/) {
                     ($gRNA, $PAM) = ($1, $2); # get first 'kmer' number of nucleotides in gRNA (kmer) + PAM (NGG), gRNA + PAM = crispr sequence
-                    my $name = "CRISPR_$instance"; $instance++;
+                    my $name    = "CRISPR_$instance"; $instance++;
+                    my $crispr  = $gRNA . $PAM;
 
                     # GC Content
                     $contentG   = $window =~ tr/G//;
@@ -114,6 +109,7 @@ sub findOligo {
 
                     # Store CRISPR oligomers and info in Hash of Hashes
                     $content = { #anonymous hash of relevant gRNA content
+                        'sequence'  => $crispr,
                         'strand'    => $strand,
                         'start'     => $i,
                         'gRNA'      => $gRNA,
