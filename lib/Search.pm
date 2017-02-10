@@ -61,7 +61,7 @@ Search::blast;
 
     Arg [2]     : Window size of CRISPR target
 
-    Example     : findOligo($seqInfo, $windowSize)
+    Example     : findOligo($seqDetails, $windowSize)
 
     Description : Find CRISPR targets
 
@@ -71,10 +71,10 @@ Search::blast;
 
 =cut
 sub findOligo {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($seqInfo, $windowSize)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($seqDetails, $windowSize)';
     @_ == 2 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($seqInfo, $windowSize) = @_;
+    my ($seqDetails, $windowSize) = @_;
     my (%CRISPRS, @CRPseqs);
     my $instance = 0; # track CRISPR count
 
@@ -130,8 +130,8 @@ sub findOligo {
     };
 
     # Get all CRISPR sequences in forward and reverse strands of sequence passed, -seq
-    $go->( $seqInfo->{'sequence'}, 'plus' );
-    $go->( $seqInfo->{'reverse'}, 'reverse' );
+    $go->( $seqDetails->{'sequence'}, 'plus' );
+    $go->( $seqDetails->{'reverse'}, 'reverse' );
 }
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
