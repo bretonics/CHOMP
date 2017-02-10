@@ -77,7 +77,7 @@ my @SUBJSEQS; # sequence file to use in BLAST search
 #-------------------------------------------------------------------------------
 # CALLS
 mkDir($OUTDIR);
-my ($CRISPRS)           = findOligo($seqDetails, $WINDOWSIZE); # CRISPR HoH and sequences array references
+my $CRISPRS             = findOligo($seqDetails, $WINDOWSIZE); # CRISPR HoH
 my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
 my $targets             = Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE); # CRISPR target hits
 writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
@@ -155,7 +155,7 @@ sub writeCRPfile {
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", $outFile);
-    say $FH "Name\tPosition\tSequence\tStrand\tSubject\tStart\tOccurrences\tIdentities";
+    say $FH "Name\tSequence\tStrand\tPalindrome\tSubject\tStart\tOccurrences\tIdentities";
 
     my ($subjects, $sortedCRISPRS, $details) = sortResults(\%targets);
     my @subjects        = @$subjects;
@@ -167,6 +167,7 @@ sub writeCRPfile {
     foreach my $subject (@subjects) {
         foreach my $crispr ( @{$sortedCRISPRS{$subject}} ) {
             my $sequence = $CRISPRS->{$crispr}->{'sequence'};
+            my $palindrome = $CRISPRS->{$crispr}{'palindrome'};
 
             # Complete oligo sequence:
             # + DOWN flanking target region
@@ -187,8 +188,9 @@ sub writeCRPfile {
             my $strand      = $CRISPRS->{$crispr}{'strand'};
             my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
             my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'unqIdentities'} } ); # get string of identities
-            my $sStart      = @{ $targets{$crispr}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
-            say $FH "$crispr\t$position\t$sequence\t$strand\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
+            my $sStart      = @{ $targets{$crispr}{$subject}{'info'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+
+            say $FH "$crispr\t$sequence\t$strand\t$palindrome\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
     } close $FH;
 

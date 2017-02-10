@@ -99,8 +99,9 @@ sub findOligo {
 
                 if ($window =~ /(.+)(.GG)$/) {
                     ($gRNA, $PAM) = ($1, $2); # get first 'kmer' number of nucleotides in gRNA (kmer) + PAM (NGG), gRNA + PAM = crispr sequence
-                    my $name    = "CRISPR_$instance"; $instance++;
-                    my $crispr  = $gRNA . $PAM;
+                    my $name        = "CRISPR_$instance"; $instance++;
+                    my $crispr      = $gRNA . $PAM;
+                    my $palindrome  = _palindrome($gRNA);
 
                     # GC Content
                     $contentG   = $window =~ tr/G//;
@@ -109,14 +110,15 @@ sub findOligo {
 
                     # Store CRISPR oligomers and info in Hash of Hashes
                     $content = { #anonymous hash of relevant gRNA content
-                        'sequence'  => $crispr,
-                        'strand'    => $strand,
-                        'start'     => $i,
-                        'gRNA'      => $gRNA,
-                        'PAM'       => $PAM,
-                        'G'         => $contentG,
-                        'C'         => $contentC,
-                        'GC'        => $GC,
+                        'sequence'      => $crispr,
+                        'palindrome'    => $palindrome,
+                        'strand'        => $strand,
+                        'start'         => $i,
+                        'gRNA'          => $gRNA,
+                        'PAM'           => $PAM,
+                        'G'             => $contentG,
+                        'C'             => $contentC,
+                        'GC'            => $GC,
                     };
                     # Hash key == CRISPR sequence name
                     # Hash value == Hash with CRISPR content info
@@ -252,6 +254,13 @@ sub blast {
 #-------------------------------------------------------------------------------
 # HELPERS
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($seq);
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 argument, a record file and extracts relevant information
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = ($name); Name of sequence record
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub _getSeqName {
     my ($seq) = @_;
 
@@ -264,11 +273,31 @@ sub _getSeqName {
     return $name;
 }
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $input = ($sequence);
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# This function takes 1 argument, a sequence string and determines if string is
+# palindrome.
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# $return = Returns yes/no if palindrome found
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+sub _palindrome {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($sequence)';
+    @_ == 1 or confess wrongNumberArguments(), $filledUsage;
+
+    my ($sequence) = @_;
+
+    my $palindrome = reverse $sequence;
+
+    $palindrome eq $sequence ? return("Yes") : return("No");
+}
+
 
 
 =head1 COPYRIGHT AND LICENSE
 
-Andres Breton © 2016
+Andres Breton ©
 
 [LICENSE]
 
