@@ -1,0 +1,3 @@
+[submodule "src/ViennaRNA"]
+	path = src/ViennaRNA
+	url = https://github.com/ViennaRNA/ViennaRNA.git
