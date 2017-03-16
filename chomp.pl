@@ -30,7 +30,7 @@ my $UPSEQ;
 our $WINDOWSIZE  = 23;
 my $SS;
 my $OUTFILE;
-our $OUTDIR = 'CRISPRS';
+our $OUTDIR = 'gRNAs';
 our $HTML;
 my $VERBOSE;
 
