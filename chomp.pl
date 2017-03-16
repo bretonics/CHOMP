@@ -188,7 +188,7 @@ sub writeCRPfile {
             my $strand      = $CRISPRS->{$crispr}{'strand'};
             my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
             my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'unqIdentities'} } ); # get string of identities
-            my $sStart      = @{ $targets{$crispr}{$subject}{'info'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+            my $sStart      = @{ $targets{$crispr}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
 
             say $FH "$crispr\t$sequence\t$strand\t$palindrome\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
