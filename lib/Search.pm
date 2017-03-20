@@ -99,7 +99,7 @@ sub findOligo {
 
                 if ($window =~ /(.+)(.GG)$/) {
                     ($gRNA, $PAM) = ($1, $2); # get first 'kmer' number of nucleotides in gRNA (kmer) + PAM (NGG), gRNA + PAM = crispr sequence
-                    my $name        = "CRISPR_$instance"; $instance++;
+                    my $name        = "gRNA_$instance"; $instance++;
                     my $crispr      = $gRNA . $PAM;
                     my $palindrome  = _palindrome($gRNA);
 

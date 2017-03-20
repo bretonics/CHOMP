@@ -248,7 +248,7 @@ sub writeCRPfasta {
     my $num = keys %$CRISPRS; # number of CRISPR sequences
 
     for (my $i = 0; $i < $num; $i++) { # get sequences in numerical order
-        my $crispr = "CRISPR_$i";
+        my $crispr = "gRNA_$i";
         my $sequence = $CRISPRS->{$crispr}->{'sequence'};
         ss($crispr, $sequence) if($SS); # secondary structure prediction if desired
         say $FH ">$crispr:" . $CRISPRS->{$crispr}->{'start'}; # 'CRISPR_0:start_position'
