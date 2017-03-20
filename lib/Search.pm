@@ -165,7 +165,7 @@ sub blast {
 
     foreach my $subject (@SUBJSEQS) {
         my $subjName = _getSeqName($subject);
-        my $outFile = "$outDir/blast/$subjName\_$OUTFILE\.blast";
+        my $outFile = "$outDir/blast/$subjName\_$OUTFILE\_blast.txt";
 
         say "Searching CRISPR targets against $subject";
 

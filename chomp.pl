@@ -31,7 +31,6 @@ our $WINDOWSIZE  = 23;
 my $SS;
 my $OUTFILE;
 our $OUTDIR = 'gRNAs';
-our $HTML;
 my $VERBOSE;
 
 my $USAGE       = "\n\n$0 [options]\n
@@ -44,7 +43,6 @@ Options:
     -ss                 Secondary structure prediction
     -out                Out file name [required]
     -outdir             Out directory name
-    -html               Print HTML BLAST results
     -help               Shows this message
 \n";
 
@@ -58,7 +56,6 @@ GetOptions(
     'ss!'               =>\$SS,
     'out=s'             =>\$OUTFILE,
     'outdir:s'          =>\$OUTDIR,
-    'html!'             =>\$HTML,
     'verbose!'          =>\$VERBOSE,
     help                =>sub{pod2usage($USAGE);}
 )or pod2usage(2);
