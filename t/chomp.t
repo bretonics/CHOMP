@@ -71,23 +71,23 @@ lives_ok { findOligo($seqDetails, $WINDOWSIZE) } 'lives ok when right paramatere
 
 my ($CRISPRS, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE);
 is(ref($CRISPRS), "HASH", "CRISPRS hash reference returned");
-is($CRISPRS->{'CRISPR_0'}->{'sequence'}, 'ATGTAGCTAGCTAGCTAGTAGGG', 'CRISPR_0 sequence is correct');
-is($CRISPRS->{'CRISPR_1'}->{'sequence'}, 'AAAAAATTTTCTCTATCTAACGG', 'CRISPR_1 sequence is correct');
-is($CRISPRS->{'CRISPR_2'}->{'sequence'}, 'AAAAATTTTCTCTATCTAACGGG', 'CRISPR_2 sequence is correct');
-is($CRISPRS->{'CRISPR_3'}->{'sequence'}, 'TGTGATCACGTACTATTATGCGG', 'CRISPR_3 sequence is correct');
-is($CRISPRS->{'CRISPR_4'}->{'sequence'}, 'AAAAATCCCATCGATCTAGCAGG', 'CRISPR_4 sequence is correct');
-is($CRISPRS->{'CRISPR_5'}->{'sequence'}, 'TCCCATCGATCTAGCAGGCCCGG', 'CRISPR_5 sequence is correct');
-is($CRISPRS->{'CRISPR_6'}->{'sequence'}, 'CGAAAAAAAATTTTCCCTATCGG', 'CRISPR_6 sequence is correct');
-is($CRISPRS->{'CRISPR_7'}->{'sequence'}, 'GAAAAAAAATTTTCCCTATCGGG', 'CRISPR_7 sequence is correct');
-is($CRISPRS->{'CRISPR_8'}->{'sequence'}, 'AAAAAAAATTTTCCCTATCGGGG', 'CRISPR_8 sequence is correct');
-is($CRISPRS->{'CRISPR_9'}->{'sequence'}, 'AAAAAAATTTTCCCTATCGGGGG', 'CRISPR_9 sequence is correct');
-is($CRISPRS->{'CRISPR_10'}->{'sequence'}, 'CTATAGCATGGGCCCCCGATAGG', 'CRISPR_10 sequence is correct');
-is($CRISPRS->{'CRISPR_11'}->{'sequence'}, 'TATAGCATGGGCCCCCGATAGGG', 'CRISPR_11 sequence is correct');
-is($CRISPRS->{'CRISPR_12'}->{'sequence'}, 'TTCGTCATGCATGCTCGCTCCGG', 'CRISPR_12 sequence is correct');
-is($CRISPRS->{'CRISPR_13'}->{'sequence'}, 'TCGTCATGCATGCTCGCTCCGGG', 'CRISPR_13 sequence is correct');
-is($CRISPRS->{'CRISPR_14'}->{'sequence'}, 'CTCCGGGCCTGCTAGATCGATGG', 'CRISPR_14 sequence is correct');
-is($CRISPRS->{'CRISPR_15'}->{'sequence'}, 'TCCGGGCCTGCTAGATCGATGGG', 'CRISPR_15 sequence is correct');
-is($CRISPRS->{'CRISPR_16'}->{'sequence'}, 'ATAGTACGTGATCACAGTCATGG', 'CRISPR_16 sequence is correct');
+is($CRISPRS->{'gRNA_0'}->{'sequence'}, 'ATGTAGCTAGCTAGCTAGTAGGG', 'gRNA_0 sequence is correct');
+is($CRISPRS->{'gRNA_1'}->{'sequence'}, 'AAAAAATTTTCTCTATCTAACGG', 'gRNA_1 sequence is correct');
+is($CRISPRS->{'gRNA_2'}->{'sequence'}, 'AAAAATTTTCTCTATCTAACGGG', 'gRNA_2 sequence is correct');
+is($CRISPRS->{'gRNA_3'}->{'sequence'}, 'TGTGATCACGTACTATTATGCGG', 'gRNA_3 sequence is correct');
+is($CRISPRS->{'gRNA_4'}->{'sequence'}, 'AAAAATCCCATCGATCTAGCAGG', 'gRNA_4 sequence is correct');
+is($CRISPRS->{'gRNA_5'}->{'sequence'}, 'TCCCATCGATCTAGCAGGCCCGG', 'gRNA_5 sequence is correct');
+is($CRISPRS->{'gRNA_6'}->{'sequence'}, 'CGAAAAAAAATTTTCCCTATCGG', 'gRNA_6 sequence is correct');
+is($CRISPRS->{'gRNA_7'}->{'sequence'}, 'GAAAAAAAATTTTCCCTATCGGG', 'gRNA_7 sequence is correct');
+is($CRISPRS->{'gRNA_8'}->{'sequence'}, 'AAAAAAAATTTTCCCTATCGGGG', 'gRNA_8 sequence is correct');
+is($CRISPRS->{'gRNA_9'}->{'sequence'}, 'AAAAAAATTTTCCCTATCGGGGG', 'gRNA_9 sequence is correct');
+is($CRISPRS->{'gRNA_10'}->{'sequence'}, 'CTATAGCATGGGCCCCCGATAGG', 'gRNA_10 sequence is correct');
+is($CRISPRS->{'gRNA_11'}->{'sequence'}, 'TATAGCATGGGCCCCCGATAGGG', 'gRNA_11 sequence is correct');
+is($CRISPRS->{'gRNA_12'}->{'sequence'}, 'TTCGTCATGCATGCTCGCTCCGG', 'gRNA_12 sequence is correct');
+is($CRISPRS->{'gRNA_13'}->{'sequence'}, 'TCGTCATGCATGCTCGCTCCGGG', 'gRNA_13 sequence is correct');
+is($CRISPRS->{'gRNA_14'}->{'sequence'}, 'CTCCGGGCCTGCTAGATCGATGG', 'gRNA_14 sequence is correct');
+is($CRISPRS->{'gRNA_15'}->{'sequence'}, 'TCCGGGCCTGCTAGATCGATGGG', 'gRNA_15 sequence is correct');
+is($CRISPRS->{'gRNA_16'}->{'sequence'}, 'ATAGTACGTGATCACAGTCATGG', 'gRNA_16 sequence is correct');
 
 
 # writeCRPfasta
