@@ -12,81 +12,81 @@
 CRISPR Tool
 ---
 
-CHOMP will search for all **'N'** window sized (default: 23) sequences containing an **NGG** sequence at the tail end, ex.) ATGTAGCTAGCTAGCTAGTA**GGG**.
+CHOMP will search for all **'n'** window sized guide RNAs (gRNAs) sequences containing an **NGG**  at the tail end. Default window size is 23.
 
-Will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with base pairs matched for each hit. You can use that to determine which CRISPR target you may want to use.
+> ex.) ATGTAGCTAGCTAGCTAGTA**GGG**.
+
+It will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with number of matching bases for each subject/query hit. You can use that to determine which gRNAs you may want to use as CRISPR target(s).
 
 
 ## Run CHOMP
-    perl chomp.pl -seq t/test.fasta -out crisprs
+    perl chomp.pl -seq usr/test.fasta -out gRNAs
 
 
 ## Arguments
-    -seq                Sequence file to search CRISPRs [required]
+    -seq                Sequence file to search gRNAs [required]
     -genome             Genome sequence file(s) to BLAST search (search instead of -seq)
     -down               Down sequence to append
     -up                 Up sequence to append
-    -window             Window size for CRISPR oligo (default = 23)
+    -window             Window size for gRNA oligo (default = 23)
     -ss                 Secondary structure prediction
     -out                Out file name [required]
     -outdir             Out directory name
-    -html               Write HTML BLAST results to file
     -help               Shows this message
 
 
 ## Output
-Writes 2 files under the default directory **./CRISPRS**:
+Writes 2 files under the default directory **gRNAs**:
 
-#### **'.FASTA'** file with each CRISPR sequence found
+#### **'.fasta'**
+Fasta file of each gRNA sequence found.
 
-
-    >CRISPR_0:0
+    >gRNA_0:0
     ATGTAGCTAGCTAGCTAGTAGGG
-    >CRISPR_1:23
+    >gRNA_1:23
     AAAAAATTTTCTCTATCTAACGG
-    >CRISPR_2:24
+    >gRNA_2:24
     AAAAATTTTCTCTATCTAACGGG
-    >CRISPR_3:115
+    >gRNA_3:115
     TGTGATCACGTACTATTATGCGG
-    >CRISPR_4:149
+    >gRNA_4:149
     AAAAATCCCATCGATCTAGCAGG
-    >CRISPR_5:154
+    >gRNA_5:154
     TCCCATCGATCTAGCAGGCCCGG
     .
     .
     .
-    >CRISPR_16:99
+    >gRNA_16:99
     ATAGTACGTGATCACAGTCATGG
 
-Suffix digit after '**:**' denotes nucleotide position in sequence where crispr was found. Ex.) CRISPR_16:**99**
-, crispr was found starting at nucleotide position **99** in `-seq` sequence.
+Suffix digit after '**:**' denotes nucleotide position in sequence where gRNA was found. Ex.) gRNA_16:**99**
+, gRNA was found starting at nucleotide position **99** in `-seq` sequence.
 
 
-#### **'.txt'** report with each CRISPR sequence details
+#### **'.txt'**
+Report with each gRNA sequence's details.
 
-- CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which CRISPR target is best to use.
+CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which CRISPR target is best to use.
 
-| Name | Sequence | Strand | Subject | Start | Occurrences | Identities
+| Name | Sequence | Strand | Palindrome | Subject | Start | Occurrences | Identities
 | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- |
-| CRISPR_10 | CTATAGCATGGGCCCCCGATAGG | reverse | test | 230 | 1 | 23
-| CRISPR_11 | TATAGCATGGGCCCCCGATAGGG | reverse | test | 229 | 1 | 23
-| CRISPR_1 | AAAAAATTTTCTCTATCTAACGG | plus | test | 24 | 3 | 16,10,8
-| CRISPR_2 | AAAAATTTTCTCTATCTAACGGG | plus | test | 25 | 3 | 15,10,8
-| CRISPR_14 | CTCCGGGCCTGCTAGATCGATGG | reverse | test | 179 | 6 | 15,9,7
-| CRISPR_15 | TCCGGGCCTGCTAGATCGATGGG | reverse | test | 178 | 6 | 15,9,7
-| CRISPR_5 | TCCCATCGATCTAGCAGGCCCGG | plus | test | 155 | 6 | 15,9,7
-| CRISPR_0 | ATGTAGCTAGCTAGCTAGTAGGG | plus | test | 1 | 4 | 14,12,10
-| CRISPR_4 | AAAAATCCCATCGATCTAGCAGG | plus | test | 150 | 6 | 11,9,7
-| CRISPR_6 | CGAAAAAAAATTTTCCCTATCGG | plus | test | 193 | 1 | 9
-| CRISPR_7 | GAAAAAAAATTTTCCCTATCGGG | plus | test | 194 | 1 | 9
-| CRISPR_8 | AAAAAAAATTTTCCCTATCGGGG | plus | test | 195 | 1 | 9
-| CRISPR_9 | AAAAAAATTTTCCCTATCGGGGG | plus | test | 196 | 1 | 9
-| CRISPR_12 | TTCGTCATGCATGCTCGCTCCGG | reverse | test | 196 | 1 | 8
-| CRISPR_13 | TCGTCATGCATGCTCGCTCCGGG | reverse | test | 195 | 1 | 8
-| CRISPR_16 | ATAGTACGTGATCACAGTCATGG | reverse | test | 131 | 2 | 8
-| CRISPR_3 | TGTGATCACGTACTATTATGCGG | plus | test | 116 | 2 | 8
+| gRNA_13 | TCGTCATGCATGCTCGCTCCGGG | reverse | No | test | 173 | 1 | 8
+| gRNA_12 | TTCGTCATGCATGCTCGCTCCGG | reverse | No | test | 174 | 1 | 8
+| gRNA_3 | TGTGATCACGTACTATTATGCGG | plus | No | test | 116 | 2 | 8
+| gRNA_16 | ATAGTACGTGATCACAGTCATGG | reverse | No | test | 109 | 2 | 8
+| gRNA_8 | AAAAAAAATTTTCCCTATCGGGG | plus | No | test | 195 | 1 | 9
+| gRNA_7 | GAAAAAAAATTTTCCCTATCGGG | plus | No | test | 194 | 1 | 9
+| gRNA_6 | CGAAAAAAAATTTTCCCTATCGG | plus | No | test | 193 | 1 | 9
+| gRNA_9 | AAAAAAATTTTCCCTATCGGGGG | plus | No | test | 196 | 1 | 9
+| gRNA_4 | AAAAATCCCATCGATCTAGCAGG | plus | No | test | 150 | 6 | 11,9,7
+| gRNA_0 | ATGTAGCTAGCTAGCTAGTAGGG | plus | No | test | 1 | 4 | 14,12,10
+| gRNA_2 | AAAAATTTTCTCTATCTAACGGG | plus | No | test | 25 | 3 | 15,10,8
+| gRNA_15 | TCCGGGCCTGCTAGATCGATGGG | reverse | No | test | 156 | 6 | 15,9,7
+| gRNA_14 | CTCCGGGCCTGCTAGATCGATGG | reverse | No | test | 157 | 6 | 15,9,7
+| gRNA_5 | TCCCATCGATCTAGCAGGCCCGG | plus | No | test | 155 | 6 | 15,9,7
+| gRNA_1 | AAAAAATTTTCTCTATCTAACGG | plus | No | test | 24 | 3 | 16,10,8
+| gRNA_11 | TATAGCATGGGCCCCCGATAGGG | reverse | No | test | 207 | 1 | 23
+| gRNA_10 | CTATAGCATGGGCCCCCGATAGG | reverse | No | test | 208 | 1 | 23
 
->Table is sorted in decreasing order using top identity for each CRISPR sequence, then sorted by number of occurrences, in current subject.
 
-#### BLAST
-Will also write a **blast** results directory under `-outdir` if `-html` option set.
+>Table is sorted in increasing order using the top identity for each gRNA sequence, and then sorted by number of occurrences, in current subject.
