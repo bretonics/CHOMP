@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+return 1 if caller();
 
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Getopt::Long; use Pod::Usage;
@@ -24,7 +25,7 @@ use MyConfig; use MyIO; use Handlers;
 #-------------------------------------------------------------------------------
 # COMMAND LINE
 my $SEQ;
-my @GENOME;
+my @SUBJECTS;
 my $DOWNSEQ;
 my $UPSEQ;
 our $WINDOWSIZE  = 23;
@@ -36,7 +37,7 @@ my $VERBOSE;
 my $USAGE       = "\n\n$0 [options]\n
 Options:
     -seq                Sequence file to search CRISPRs [required]
-    -genome             Genome sequence file to BLAST search (search instead of -seq)
+    -subjects           Subject sequence file(s) to BLAST search (search instead of -seq)
     -down               Down sequence to append
     -up                 Up sequence to append
     -window             Window size for CRISPR oligo (default = 23)
@@ -49,7 +50,7 @@ Options:
 # OPTIONS
 GetOptions(
     'seq=s'             =>\$SEQ,
-    'genome:s{,10}'     =>\@GENOME,
+    'subjects:s{,10}'   =>\@SUBJECTS,
     'down:s'            =>\$DOWNSEQ,
     'up:s'              =>\$UPSEQ,
     'window:i'          =>\$WINDOWSIZE,
@@ -119,8 +120,8 @@ sub checks {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub setParameters {
     # Set up Variables
-    if (@GENOME) {
-        @SUBJSEQS = @GENOME;
+    if (@SUBJECTS) {
+        @SUBJSEQS = @SUBJECTS;
     } elsif ($SEQ) {
         @SUBJSEQS = $SEQ;
     } else {
