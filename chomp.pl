@@ -38,11 +38,11 @@ our $WINDOWSIZE  = 23;
 
 my $USAGE       = "\n\n$0 [options]\n
 Options:
-    -seq                Sequence file to search CRISPRs [required]
+    -seq                Sequence file to search gRNAs [required]
     -subjects           Subject sequence file(s) to BLAST search (search instead of -seq)
     -down               Down sequence to append
     -up                 Up sequence to append
-    -window             Window size for CRISPR oligo (default = 23)
+    -window             Window size for gRNA sequence (default = 23)
     -ss                 Secondary structure prediction
     -out                Out file name [required]
     -outdir             Out directory name
@@ -98,10 +98,10 @@ sub checks {
         die 'Did not provide an input file, -seq <infile>', $USAGE;
     }
     unless ($DOWNSEQ){
-        say 'Did not provide a DOWN stream sequence to append to CRISPR seq, -down <seq>' if($VERBOSE);
+        say 'Did not provide a DOWN stream sequence to append to gRNA seq, -down <seq>' if($VERBOSE);
     }
     unless ($UPSEQ){
-        say 'Did not provide an UP stream sequence to append to CRISPR seq, -up <seq>' if($VERBOSE);
+        say 'Did not provide an UP stream sequence to append to gRNA seq, -up <seq>' if($VERBOSE);
     }
     unless ($OUTFILE) {
         die 'Did not provide an output file, -out <outfile>', $USAGE;
@@ -139,7 +139,7 @@ sub setParameters {
 # $input = ();
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes 5 arguments; gRNAs HoH, BLAST target HoA containing matches
-# throughout the sequence, the down/up stream sequences to append to crispr
+# throughout the sequence, the down/up stream sequences to append to gRNA
 # sequences, and the output file name
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $output = File containing gRNAs sequences and relative information on results
@@ -171,7 +171,7 @@ sub writeResults {
 
             # Complete oligo sequence:
             # + DOWN flanking target region
-            # + CRISPR sequence
+            # + gRNA sequence
             # + UP flanking target region
             if (!$down and !$up) {
                 $sequence = $sequence;
@@ -184,17 +184,17 @@ sub writeResults {
             }
 
             # Get all details to print to file
-            my $position    = $gRNAs->{$gRNA}{'start'}; #CRISPR sequence position
+            my $position    = $gRNAs->{$gRNA}{'start'}; # gRNA sequence position
             my $strand      = $gRNAs->{$gRNA}{'strand'};
             my $occurrence  = $details->{$gRNA}{$subject}->{'occurrences'};
             my $identities  = join("," , @{ $details->{$gRNA}{$subject}->{'unqIdentities'} } ); # get string of identities
-            my $sStart      = @{ $targets{$gRNA}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+            my $sStart      = @{ $targets{$gRNA}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for gRNA found
 
             say $FH "$gRNA\t$sequence\t$strand\t$palindrome\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
     } close $FH;
 
-    say "CRISPRs file written to $outFile";
+    say "gRNAs file written to $outFile";
     return;
 }
 #-------------------------------------------------------------------------------
@@ -235,9 +235,9 @@ sub getSeqDetails {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ($gRNAs, $OUTDIR, $OUTFILE);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# This function takes 3 arguments; HoH reference of CRISPR oligos,
-# the output diretory, and the output file name. Writes each CRISPR
-# target found in FASTA and returns file location.
+# This function takes 3 arguments; HoH reference of gRNA sequences,
+# the output diretory, and the output file name. Writes each gRNA
+# sequence found in FASTA and returns file location.
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = ($outFile);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -266,9 +266,9 @@ sub writeFasta {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes 1 arguments: $target hash of array of hashes
 # references returned from Search::blast. Returns a numerically
-# ordered array of CRISPR sequence names based on lowest identity
+# ordered array of gRNA sequence names based on lowest identity
 # base pair matches, then occurrences and a details hash with sorted
-# identities and number of occurrences per CRISPR sequence.
+# identities and number of occurrences per gRNA sequence.
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = ( \@sortedgRNAs, \%details );
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -288,16 +288,16 @@ sub sortResults {
     my @gRNAs = keys %targets;
     my (@subjects, @noHits, @sorted, %sortedgRNAs, %details);
 
-    # Get number of occurrences from BLAST call per CRISPR target in %targets Hash of Hashes of Array of Hashes
-    foreach my $gRNA (@gRNAs) { # iterate through each CRISPR instance
+    # Get number of occurrences from BLAST call per gRNA sequence in %targets Hash of Hashes of Array of Hashes
+    foreach my $gRNA (@gRNAs) { # iterate through each gRNA instance
         @subjects = sort keys $targets{$gRNA}; # @subjects == BLAST subject instances in Hash of Arrays of Hash
 
         foreach my $subject (@subjects) { # iterate through each BLAST subject instance
-            # Handle CRISPR sequences having 'No hits', skip sorting
+            # Handle gRNA sequences having 'No hits', skip sorting
             next if ( @{ $targets{$gRNA}{$subject}{'info'} }[0]->{'numhits'} == 0 );
 
             my @identities;
-            my @ids = sortIdentities( $targets->{$gRNA}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each CRISPR query
+            my @ids = sortIdentities( $targets->{$gRNA}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each gRNA query
             push @identities, @ids; # push identities list for each subject
 
             # Remove duplicates
@@ -312,8 +312,8 @@ sub sortResults {
             @identities     = ( sort {$b <=> $a} @identities );
             @unqIdentities  = ( sort {$b <=> $a} @unqIdentities );
 
-            # Number of hashes in array == number of matches for same CRISPR sequence throughout the whole sequence
-            my $occurrences = @identities; # number of occcurrences per CRISPR
+            # Number of hashes in array == number of matches for same gRNA sequence throughout the whole sequence
+            my $occurrences = @identities; # number of occcurrences per gRNA
 
             # %details
             # -- Hash key == gRNA name
@@ -343,7 +343,7 @@ sub sortResults {
 # $input = ($targets{$name});
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes 1 argument: an array reference containing
-# all CRISPR matches for a given CRISPR sequence name
+# all gRNA matches for a given gRNA sequence name
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = sorted identities ascending numerically
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

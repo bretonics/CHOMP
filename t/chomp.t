@@ -38,16 +38,16 @@ BEGIN { use_ok('SS') }
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # MAIN
 
-# checks
-print "\nTesting checks()...\n";
-dies_ok { checks() } 'dies ok when no arguments passed in checks()';
-
-
-# setParameters
-print "\nTesting setParameters()...\n";
-# dies_ok { setParameters(1) } 'dies ok when 1 arguments is passed in setParameters()';
-dies_ok { setParameters() } 'dies ok when no arguments passed in setParameters()';
-# setParameters();
+# # checks
+# print "\nTesting checks()...\n";
+# dies_ok { checks() } 'dies ok when no arguments passed in checks()';
+#
+#
+# # setParameters
+# print "\nTesting setParameters()...\n";
+# # dies_ok { setParameters(1) } 'dies ok when 1 arguments is passed in setParameters()';
+# dies_ok { setParameters() } 'dies ok when no arguments passed in setParameters()';
+# # setParameters();
 
 
 # getSeqDetails
@@ -66,39 +66,39 @@ dies_ok { findOligo() } 'dies ok when no argument passed in findOligo()';
 dies_ok { findOligo(1) } 'dies ok when 1 argument is passed in findOligo()';
 dies_ok { findOligo(1, $WINDOWSIZE) } 'dies ok when 2 incorrect arguments passed in findOligo()';
 dies_ok { findOligo(1, $WINDOWSIZE) } 'dies ok when 2 arguments passed, but 1 is incorrect in findOligo()';
-dies_ok { writeCRPfasta(1,2,3) } 'dies ok when 3 arguments are passed in findOligo()';
+dies_ok { writeFasta(1,2,3) } 'dies ok when 3 arguments are passed in findOligo()';
 lives_ok { findOligo($seqDetails, $WINDOWSIZE) } 'lives ok when right paramaterers passed in findOligo()';
 
-my ($CRISPRS, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE);
-is(ref($CRISPRS), "HASH", "CRISPRS hash reference returned");
-is($CRISPRS->{'gRNA_0'}->{'sequence'}, 'ATGTAGCTAGCTAGCTAGTAGGG', 'gRNA_0 sequence is correct');
-is($CRISPRS->{'gRNA_1'}->{'sequence'}, 'AAAAAATTTTCTCTATCTAACGG', 'gRNA_1 sequence is correct');
-is($CRISPRS->{'gRNA_2'}->{'sequence'}, 'AAAAATTTTCTCTATCTAACGGG', 'gRNA_2 sequence is correct');
-is($CRISPRS->{'gRNA_3'}->{'sequence'}, 'TGTGATCACGTACTATTATGCGG', 'gRNA_3 sequence is correct');
-is($CRISPRS->{'gRNA_4'}->{'sequence'}, 'AAAAATCCCATCGATCTAGCAGG', 'gRNA_4 sequence is correct');
-is($CRISPRS->{'gRNA_5'}->{'sequence'}, 'TCCCATCGATCTAGCAGGCCCGG', 'gRNA_5 sequence is correct');
-is($CRISPRS->{'gRNA_6'}->{'sequence'}, 'CGAAAAAAAATTTTCCCTATCGG', 'gRNA_6 sequence is correct');
-is($CRISPRS->{'gRNA_7'}->{'sequence'}, 'GAAAAAAAATTTTCCCTATCGGG', 'gRNA_7 sequence is correct');
-is($CRISPRS->{'gRNA_8'}->{'sequence'}, 'AAAAAAAATTTTCCCTATCGGGG', 'gRNA_8 sequence is correct');
-is($CRISPRS->{'gRNA_9'}->{'sequence'}, 'AAAAAAATTTTCCCTATCGGGGG', 'gRNA_9 sequence is correct');
-is($CRISPRS->{'gRNA_10'}->{'sequence'}, 'CTATAGCATGGGCCCCCGATAGG', 'gRNA_10 sequence is correct');
-is($CRISPRS->{'gRNA_11'}->{'sequence'}, 'TATAGCATGGGCCCCCGATAGGG', 'gRNA_11 sequence is correct');
-is($CRISPRS->{'gRNA_12'}->{'sequence'}, 'TTCGTCATGCATGCTCGCTCCGG', 'gRNA_12 sequence is correct');
-is($CRISPRS->{'gRNA_13'}->{'sequence'}, 'TCGTCATGCATGCTCGCTCCGGG', 'gRNA_13 sequence is correct');
-is($CRISPRS->{'gRNA_14'}->{'sequence'}, 'CTCCGGGCCTGCTAGATCGATGG', 'gRNA_14 sequence is correct');
-is($CRISPRS->{'gRNA_15'}->{'sequence'}, 'TCCGGGCCTGCTAGATCGATGGG', 'gRNA_15 sequence is correct');
-is($CRISPRS->{'gRNA_16'}->{'sequence'}, 'ATAGTACGTGATCACAGTCATGG', 'gRNA_16 sequence is correct');
+my ($gRNAs, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE);
+is(ref($gRNAs), "HASH", "CRISPRS hash reference returned");
+is($gRNAs->{'gRNA_0'}->{'sequence'}, 'ATGTAGCTAGCTAGCTAGTAGGG', 'gRNA_0 sequence is correct');
+is($gRNAs->{'gRNA_1'}->{'sequence'}, 'AAAAAATTTTCTCTATCTAACGG', 'gRNA_1 sequence is correct');
+is($gRNAs->{'gRNA_2'}->{'sequence'}, 'AAAAATTTTCTCTATCTAACGGG', 'gRNA_2 sequence is correct');
+is($gRNAs->{'gRNA_3'}->{'sequence'}, 'TGTGATCACGTACTATTATGCGG', 'gRNA_3 sequence is correct');
+is($gRNAs->{'gRNA_4'}->{'sequence'}, 'AAAAATCCCATCGATCTAGCAGG', 'gRNA_4 sequence is correct');
+is($gRNAs->{'gRNA_5'}->{'sequence'}, 'TCCCATCGATCTAGCAGGCCCGG', 'gRNA_5 sequence is correct');
+is($gRNAs->{'gRNA_6'}->{'sequence'}, 'CGAAAAAAAATTTTCCCTATCGG', 'gRNA_6 sequence is correct');
+is($gRNAs->{'gRNA_7'}->{'sequence'}, 'GAAAAAAAATTTTCCCTATCGGG', 'gRNA_7 sequence is correct');
+is($gRNAs->{'gRNA_8'}->{'sequence'}, 'AAAAAAAATTTTCCCTATCGGGG', 'gRNA_8 sequence is correct');
+is($gRNAs->{'gRNA_9'}->{'sequence'}, 'AAAAAAATTTTCCCTATCGGGGG', 'gRNA_9 sequence is correct');
+is($gRNAs->{'gRNA_10'}->{'sequence'}, 'CTATAGCATGGGCCCCCGATAGG', 'gRNA_10 sequence is correct');
+is($gRNAs->{'gRNA_11'}->{'sequence'}, 'TATAGCATGGGCCCCCGATAGGG', 'gRNA_11 sequence is correct');
+is($gRNAs->{'gRNA_12'}->{'sequence'}, 'TTCGTCATGCATGCTCGCTCCGG', 'gRNA_12 sequence is correct');
+is($gRNAs->{'gRNA_13'}->{'sequence'}, 'TCGTCATGCATGCTCGCTCCGGG', 'gRNA_13 sequence is correct');
+is($gRNAs->{'gRNA_14'}->{'sequence'}, 'CTCCGGGCCTGCTAGATCGATGG', 'gRNA_14 sequence is correct');
+is($gRNAs->{'gRNA_15'}->{'sequence'}, 'TCCGGGCCTGCTAGATCGATGGG', 'gRNA_15 sequence is correct');
+is($gRNAs->{'gRNA_16'}->{'sequence'}, 'ATAGTACGTGATCACAGTCATGG', 'gRNA_16 sequence is correct');
 
 
-# writeCRPfasta
-print "\nTesting writeCRPfasta()...\n";
-dies_ok { writeCRPfasta() } 'dies ok when no argument passed in writeCRPfasta()';
-dies_ok { writeCRPfasta(1) } 'dies ok when 1 argument is passed in writeCRPfasta()';
-dies_ok { writeCRPfasta(1,2) } 'dies ok when 2 incorrect arguments passed in writeCRPfasta()';
-dies_ok { writeCRPfasta(1, $OUTFILE) } 'dies ok when 2 arguments passed, but 1 is incorrect in writeCRPfasta()';
-dies_ok { writeCRPfasta(1,2,3) } 'dies ok when 3 arguments are passed in writeCRPfasta()';
-lives_ok { writeCRPfasta($CRISPRS, $OUTFILE) } 'lives ok when right parameters are passed in writeCRPfasta()';
-my $CRPfile = writeCRPfasta($CRISPRS, $OUTFILE);
+# writeFasta
+print "\nTesting writeFasta()...\n";
+dies_ok { writeFasta() } 'dies ok when no argument passed in writeFasta()';
+dies_ok { writeFasta(1) } 'dies ok when 1 argument is passed in writeFasta()';
+dies_ok { writeFasta(1,2) } 'dies ok when 2 incorrect arguments passed in writeFasta()';
+dies_ok { writeFasta(1, $OUTFILE) } 'dies ok when 2 arguments passed, but 1 is incorrect in writeFasta()';
+dies_ok { writeFasta(1,2,3) } 'dies ok when 3 arguments are passed in writeFasta()';
+lives_ok { writeFasta($gRNAs, $OUTFILE) } 'lives ok when right parameters are passed in writeFasta()';
+my $CRPfile = writeFasta($gRNAs, $OUTFILE);
 
 
 # Search::blast
@@ -124,7 +124,7 @@ is ( Search::_palindrome('ATGTAA') , 'No', 'NO palindrome found is correct');
 
 # writeCRPfile
 # print "\nTesting writeCRPfile()...\n";
-# writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
+# writeCRPfile($gRNAs, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 
 
