@@ -57,17 +57,17 @@ Search::blast;
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 findOligo
 
-    Arg [1]     : Sequences info hash to be searched
+    Arg [1]     : Sequence to be searched details hash
 
-    Arg [2]     : Window size of CRISPR target
+    Arg [2]     : Window size of gRNA sequence
 
     Example     : findOligo($seqDetails, $windowSize)
 
-    Description : Find CRISPR targets
+    Description : Find gRNA sequences for CRISPR targeting
 
     Returntype  : Hash of hashes reference
 
-    Status      : Development
+    Status      : Stable
 
 =cut
 sub findOligo {
@@ -75,59 +75,58 @@ sub findOligo {
     @_ == 2 or confess wrongNumberArguments(), $filledUsage;
 
     my ($seqDetails, $windowSize) = @_;
-    my (%CRISPRS, @CRPseqs);
-    my $instance = 0; # track CRISPR count
+    my %gRNAs;
+    my $instance = 0; # track gRNA count
 
-    # Anonymous subroutine to find CRISPR sequences in forward and reverse strands.
-    # Stores both strand findings in same hash (%CRISPRS) containing all information
-    # and array (@CRPseqs) containing all CRISPR sequences [cause why not].
+    # Anonymous subroutine to find gRNA sequences in forward and reverse strands.
+    # Stores both strand findings in same hash (%gRNAs) containing all information
     my $go = sub {
             my ($sequence, $strand) = @_;
 
-            say "Searching CRISPR sequences on $strand strand";
+            say "Searching gRNA sequences on $strand strand";
 
             my $seqLen = length($sequence);
-            my ($gRNA, $PAM, $content, $contentG, $contentC, $GC);
+            my ($kmer, $PAM, $gRNA, $content, $contentG, $contentC, $GC);
 
             for (my $i = 0; $i < $seqLen; $i++) {
                 my $window = substr $sequence, $i, $windowSize;
 
-                # LAST STEP: When DONE LOOKING UP -- Return CRISPR sequences and information
-                # Returns references of HoH containing all CRISPR instances found and
-                # respective information for each
-                return(\%CRISPRS) if ( length($window) < $windowSize ); # don't go out of bounds when at end of sequence
+                # LAST STEP: When DONE LOOKING UP -- Return gRNA sequences and information.
+                # Returns references of HoH containing all gRNA instances found and
+                # respective information for each gRNA sequence
+                return(\%gRNAs) if ( length($window) < $windowSize ); # don't go out of bounds when at end of sequence
 
                 if ($window =~ /(.+)(.GG)$/) {
-                    ($gRNA, $PAM) = ($1, $2); # get first 'kmer' number of nucleotides in gRNA (kmer) + PAM (NGG), gRNA + PAM = crispr sequence
+                    ($kmer, $PAM) = ($1, $2); # get first 'kmer' and PAM nucleotides in gRNA (kmer + PAM)
                     my $name        = "gRNA_$instance"; $instance++;
-                    my $crispr      = $gRNA . $PAM;
-                    my $palindrome  = _palindrome($gRNA);
+                    my $gRNA        = $kmer . $PAM; # kmer + PAM = gRNA sequence
+                    my $palindrome  = _palindrome($kmer);
 
                     # GC Content
-                    $contentG   = $window =~ tr/G//;
-                    $contentC   = $window =~ tr/C//;
+                    $contentG   = $gRNA =~ tr/G//;
+                    $contentC   = $gRNA =~ tr/C//;
                     $GC         = ($contentG + $contentC)/$windowSize;
 
-                    # Store CRISPR oligomers and info in Hash of Hashes
-                    $content = { #anonymous hash of relevant gRNA content
-                        'sequence'      => $crispr,
+                    # Store gRNA sequences and info in Hash of Hashes
+                    $content = { # anonymous hash of relevant gRNA content
+                        'kmer'          => $kmer,
                         'palindrome'    => $palindrome,
                         'strand'        => $strand,
                         'start'         => $i,
-                        'gRNA'          => $gRNA,
+                        'sequence'      => $gRNA,
                         'PAM'           => $PAM,
                         'G'             => $contentG,
                         'C'             => $contentC,
                         'GC'            => $GC,
                     };
-                    # Hash key == CRISPR sequence name
-                    # Hash value == Hash with CRISPR content info
-                    $CRISPRS{$name} = $content;
+                    # Hash key == gRNA sequence name
+                    # Hash value == Hash with gRNA content info
+                    $gRNAs{$name} = $content;
                 }
             }
     };
 
-    # Get all CRISPR sequences in forward and reverse strands of sequence passed, -seq
+    # Get all gRNA sequences in forward and reverse strands of sequence passed, -seq
     $go->( $seqDetails->{'sequence'}, 'plus' );
     $go->( $seqDetails->{'reverse'}, 'reverse' );
 }
