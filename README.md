@@ -66,7 +66,7 @@ Suffix digit after '**:**' denotes nucleotide position in sequence where gRNA wa
 #### **'.txt'**
 Report with each gRNA sequence's details.
 
-CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which CRISPR target is best to use.
+CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which gRNA sequence is best to use for target.
 
 | Name | Sequence | Strand | Palindrome | Subject | Start | Occurrences | Identities
 | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- |
