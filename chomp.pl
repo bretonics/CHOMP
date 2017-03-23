@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-return 1 if caller();
+return 1 if caller(); #tests
 
 use strict; use warnings; use diagnostics; use feature qw(say);
 use Getopt::Long; use Pod::Usage;
@@ -15,7 +15,7 @@ use MyConfig; use MyIO; use Handlers;
 #   CAPITAN:        Andres Breton, http://andresbreton.com
 #   FILE:           chomp.pl
 #   LICENSE:        MIT
-#   USAGE:          Find CRISPR targets and output results for oligo ordering
+#   USAGE:          Find guide RNA (gRNA) sequences for CRISPR targeting
 #   DEPENDENCIES:   - BioPerl modules
 #                   - Own 'Modules' repo
 #
@@ -28,11 +28,13 @@ my $SEQ;
 my @SUBJECTS;
 my $DOWNSEQ;
 my $UPSEQ;
-our $WINDOWSIZE  = 23;
 my $SS;
 my $OUTFILE;
-our $OUTDIR = 'gRNAs';
 my $VERBOSE;
+
+our $OUTDIR = 'gRNAs';
+our $WINDOWSIZE  = 23;
+
 
 my $USAGE       = "\n\n$0 [options]\n
 Options:
@@ -75,10 +77,10 @@ my @SUBJSEQS; # sequence file to use in BLAST search
 #-------------------------------------------------------------------------------
 # CALLS
 mkDir($OUTDIR);
-my $CRISPRS             = findOligo($seqDetails, $WINDOWSIZE); # CRISPR HoH
-my $CRPfile             = writeCRPfasta($CRISPRS, $OUTFILE); # Write CRISPRs FASTA file
-my $targets             = Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE); # CRISPR target hits
-writeCRPfile($CRISPRS, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
+my $gRNAs       = findOligo($seqDetails, $WINDOWSIZE); # gRNA HoH
+my $CRPfile     = writeCRPfasta($gRNAs, $OUTFILE); # Write gRNAa FASTA file
+my $targets     = Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE); # gRNA target hits
+writeCRPfile($gRNAs, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
@@ -146,10 +148,10 @@ sub writeCRPfile {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE)';
     @_ == 6 or die wrongNumberArguments(), $filledUsage;
 
-    my ($CRISPRS, $targets, $down, $up, $window, $file) = @_;
+    my ($gRNAs, $targets, $down, $up, $window, $file) = @_;
 
     my %targets = %$targets;
-    my $num     = keys %$CRISPRS; # number of CRISPR sequences
+    my $num     = keys %$gRNAs; # number of gRNA sequences
     my $outFile = "$OUTDIR/$OUTFILE.txt";
 
     my $FH = getFH(">", $outFile);
@@ -164,8 +166,8 @@ sub writeCRPfile {
     # Get ordered CRISPR sequences + info to print
     foreach my $subject (@subjects) {
         foreach my $crispr ( @{$sortedCRISPRS{$subject}} ) {
-            my $sequence = $CRISPRS->{$crispr}->{'sequence'};
-            my $palindrome = $CRISPRS->{$crispr}{'palindrome'};
+            my $sequence = $gRNAs->{$crispr}->{'sequence'};
+            my $palindrome = $gRNAs->{$crispr}{'palindrome'};
 
             # Complete oligo sequence:
             # + DOWN flanking target region
@@ -182,8 +184,8 @@ sub writeCRPfile {
             }
 
             # Get all details to print to file
-            my $position    = $CRISPRS->{$crispr}{'start'}; #CRISPR sequence position
-            my $strand      = $CRISPRS->{$crispr}{'strand'};
+            my $position    = $gRNAs->{$crispr}{'start'}; #CRISPR sequence position
+            my $strand      = $gRNAs->{$crispr}{'strand'};
             my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
             my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'unqIdentities'} } ); # get string of identities
             my $sStart      = @{ $targets{$crispr}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
@@ -231,7 +233,7 @@ sub getSeqDetails {
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $input = ($CRISPRS, $OUTDIR, $OUTFILE);
+# $input = ($gRNAs, $OUTDIR, $OUTFILE);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # This function takes 3 arguments; HoH reference of CRISPR oligos,
 # the output diretory, and the output file name. Writes each CRISPR
@@ -240,19 +242,19 @@ sub getSeqDetails {
 # $return = ($outFile);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub writeCRPfasta {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($CRISPRS, $OUTFILE)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($gRNAs, $OUTFILE)';
     @_ == 2 or die wrongNumberArguments(), $filledUsage;
 
-    my ($CRISPRS, $OUTFILE) = @_;
-    my $outFile = "$OUTDIR/$OUTFILE.fasta";
-    my $FH = getFH(">", $outFile);
-    my $num = keys %$CRISPRS; # number of CRISPR sequences
+    my ($gRNAs, $out) = @_;
+    my $outFile = "$OUTDIR/$out.fasta";
+    my $FH      = getFH(">", $outFile);
+    my $num     = keys %$gRNAs; # number of gRNA sequences
 
     for (my $i = 0; $i < $num; $i++) { # get sequences in numerical order
-        my $crispr = "gRNA_$i";
-        my $sequence = $CRISPRS->{$crispr}->{'sequence'};
-        ss($crispr, $sequence) if($SS); # secondary structure prediction if desired
-        say $FH ">$crispr:" . $CRISPRS->{$crispr}->{'start'}; # 'CRISPR_0:start_position'
+        my $name = "gRNA_$i";
+        my $sequence = $gRNAs->{$name}->{'sequence'};
+        ss($name, $sequence) if($SS); # secondary structure prediction if desired
+        say $FH ">$name:" . $gRNAs->{$name}->{'start'}; # 'gRNA_0:start_position'
         say $FH $sequence;
     } close $FH;
 
