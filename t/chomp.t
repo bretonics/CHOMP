@@ -70,7 +70,7 @@ dies_ok { writeFasta(1,2,3) } 'dies ok when 3 arguments are passed in findOligo(
 lives_ok { findOligo($seqDetails, $WINDOWSIZE) } 'lives ok when right paramaterers passed in findOligo()';
 
 my ($gRNAs, $CRPseqs) = findOligo($seqDetails, $WINDOWSIZE);
-is(ref($gRNAs), "HASH", "CRISPRS hash reference returned");
+is(ref($gRNAs), "HASH", "gRNA hash reference returned");
 is($gRNAs->{'gRNA_0'}->{'sequence'}, 'ATGTAGCTAGCTAGCTAGTAGGG', 'gRNA_0 sequence is correct');
 is($gRNAs->{'gRNA_1'}->{'sequence'}, 'AAAAAATTTTCTCTATCTAACGG', 'gRNA_1 sequence is correct');
 is($gRNAs->{'gRNA_2'}->{'sequence'}, 'AAAAATTTTCTCTATCTAACGGG', 'gRNA_2 sequence is correct');

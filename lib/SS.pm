@@ -77,7 +77,7 @@ sub ss {
 
     my $F = RNA::pf_fold($sequence);   # compute partition function and pair pobabilities
     my ($ss, $mfe) = RNA::fold($sequence);
-    RNA::PS_rna_plot($sequence, $ss, $rnaPlot);  # write PS plot to CRISPR_#_rna.ps
+    RNA::PS_rna_plot($sequence, $ss, $rnaPlot);  # write PS plot to gRNA_#_rna.ps
     RNA::PS_dot_plot($sequence, $dotPlot);       # write dot plot to dot.ps
 
     my $command = "relplot.pl $rnaPlot $dotPlot > $rssPlot";
