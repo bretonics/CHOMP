@@ -80,7 +80,7 @@ mkDir($OUTDIR);
 my $gRNAs       = findOligo($seqDetails, $WINDOWSIZE); # gRNA HoH
 my $fastaFile   = writeFasta($gRNAs, $OUTFILE); # Write gRNAs fasta file
 my $targets     = Search::blast($fastaFile, \@SUBJSEQS, $OUTFILE); # gRNA target hits
-writeCRPfile($gRNAs, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
+writeResults($gRNAs, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
 # SUBS
@@ -138,14 +138,14 @@ sub setParameters {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $input = ();
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# This function takes 5 arguments; CRISPR HoH, BLAST target HoA containing matches
+# This function takes 5 arguments; gRNAs HoH, BLAST target HoA containing matches
 # throughout the sequence, the down/up stream sequences to append to crispr
 # sequences, and the output file name
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $output = File containing CRISPR target sequences and relative information
+# $output = File containing gRNAs sequences and relative information on results
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-sub writeCRPfile {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRS, \%targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE)';
+sub writeResults {
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%gRNAs, \%targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE)';
     @_ == 6 or die wrongNumberArguments(), $filledUsage;
 
     my ($gRNAs, $targets, $down, $up, $window, $file) = @_;
@@ -157,17 +157,17 @@ sub writeCRPfile {
     my $FH = getFH(">", $outFile);
     say $FH "Name\tSequence\tStrand\tPalindrome\tSubject\tStart\tOccurrences\tIdentities";
 
-    my ($subjects, $sortedCRISPRS, $details) = sortResults(\%targets);
-    my @subjects        = @$subjects;
-    my %sortedCRISPRS   = %$sortedCRISPRS;
-    my %details         = %$details;
+    my ($subjects, $sortedgRNAs, $details) = sortResults(\%targets);
+    my @subjects    = @$subjects;
+    my %sortedgRNAs = %$sortedgRNAs;
+    my %details     = %$details;
 
 
-    # Get ordered CRISPR sequences + info to print
+    # Get ordered gRNA sequences + info to print
     foreach my $subject (@subjects) {
-        foreach my $crispr ( @{$sortedCRISPRS{$subject}} ) {
-            my $sequence = $gRNAs->{$crispr}->{'sequence'};
-            my $palindrome = $gRNAs->{$crispr}{'palindrome'};
+        foreach my $gRNA ( @{$sortedgRNAs{$subject}} ) {
+            my $sequence    = $gRNAs->{$gRNA}->{'sequence'};
+            my $palindrome  = $gRNAs->{$gRNA}{'palindrome'};
 
             # Complete oligo sequence:
             # + DOWN flanking target region
@@ -184,13 +184,13 @@ sub writeCRPfile {
             }
 
             # Get all details to print to file
-            my $position    = $gRNAs->{$crispr}{'start'}; #CRISPR sequence position
-            my $strand      = $gRNAs->{$crispr}{'strand'};
-            my $occurrence  = $details->{$crispr}{$subject}->{'occurrences'};
-            my $identities  = join("," , @{ $details->{$crispr}{$subject}->{'unqIdentities'} } ); # get string of identities
-            my $sStart      = @{ $targets{$crispr}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
+            my $position    = $gRNAs->{$gRNA}{'start'}; #CRISPR sequence position
+            my $strand      = $gRNAs->{$gRNA}{'strand'};
+            my $occurrence  = $details->{$gRNA}{$subject}->{'occurrences'};
+            my $identities  = join("," , @{ $details->{$gRNA}{$subject}->{'unqIdentities'} } ); # get string of identities
+            my $sStart      = @{ $targets{$gRNA}{$subject}{'hsps'} }[0]->{'sstart'}; # get location of BLAST match hit in subject (reference) for CRISPR found
 
-            say $FH "$crispr\t$sequence\t$strand\t$palindrome\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
+            say $FH "$gRNA\t$sequence\t$strand\t$palindrome\t$subject\t$sStart\t$occurrence\t$identities"; # print to file
         }
     } close $FH;
 
@@ -270,7 +270,7 @@ sub writeFasta {
 # base pair matches, then occurrences and a details hash with sorted
 # identities and number of occurrences per CRISPR sequence.
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# $return = ( \@sortedCRISPRS, \%details );
+# $return = ( \@sortedgRNAs, \%details );
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub sortResults {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targetsRef)';
@@ -278,26 +278,26 @@ sub sortResults {
 
     my ($targetsRef) = @_;
     # %targets HoHoAoH:
-    # -- Hash key == CRISRP name
+    # -- Hash key == gRNA name
     # -- Hash key == Subject name
     # -- Hash key == 'info'
     # -- Hash key == 'hsps'
-    # -- Array accounts for multiple hits for each CRISPR sequence
+    # -- Array accounts for multiple hits for each gRNA sequence
     # -- Hash contains BLAST match info
     my %targets = %$targetsRef;
-    my @crisprs = keys %targets;
-    my (@subjects, @noHits, @sorted, %sortedCRISPRS, %details);
+    my @gRNAs = keys %targets;
+    my (@subjects, @noHits, @sorted, %sortedgRNAs, %details);
 
     # Get number of occurrences from BLAST call per CRISPR target in %targets Hash of Hashes of Array of Hashes
-    foreach my $crispr (@crisprs) { # iterate through each CRISPR instance
-        @subjects = sort keys $targets{$crispr}; # @subjects == BLAST subject instances in Hash of Arrays of Hash
+    foreach my $gRNA (@gRNAs) { # iterate through each CRISPR instance
+        @subjects = sort keys $targets{$gRNA}; # @subjects == BLAST subject instances in Hash of Arrays of Hash
 
         foreach my $subject (@subjects) { # iterate through each BLAST subject instance
             # Handle CRISPR sequences having 'No hits', skip sorting
-            next if ( @{ $targets{$crispr}{$subject}{'info'} }[0]->{'numhits'} == 0 );
+            next if ( @{ $targets{$gRNA}{$subject}{'info'} }[0]->{'numhits'} == 0 );
 
             my @identities;
-            my @ids = sortIdentities( $targets->{$crispr}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each CRISPR query
+            my @ids = sortIdentities( $targets->{$gRNA}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each CRISPR query
             push @identities, @ids; # push identities list for each subject
 
             # Remove duplicates
@@ -316,10 +316,10 @@ sub sortResults {
             my $occurrences = @identities; # number of occcurrences per CRISPR
 
             # %details
-            # -- Hash key == CRISPR name
+            # -- Hash key == gRNA name
             # -- Hash key == subject
             # -- Hash keys == 'identities', 'unique identities', and 'number of occurrences'
-            $details{$crispr}{$subject} = {
+            $details{$gRNA}{$subject} = {
                 'identities'    => \@identities,
                 'unqIdentities' => \@unqIdentities,
                 'occurrences'   => $occurrences,
@@ -327,16 +327,16 @@ sub sortResults {
         }
     }
 
-    # Return sorted CRISPR names based on lowest identity base pair matches, then occurrences
+    # Return sorted gRNA names based on lowest identity base pair matches, then occurrences
     foreach my $subject ( @subjects ) {
-        # Get only CRISPRs having hits in current subject, remove others
-        my @crisprsHit = grep { @{ $targets{$_}{$subject}{'info'} }[0]->{'numhits'} != 0 } @crisprs;
+        # Get only gRNAs having hits in current subject, remove others
+        my @gRNAsHit = grep { @{ $targets{$_}{$subject}{'info'} }[0]->{'numhits'} != 0 } @gRNAs;
 
-        my @sorted = ( sort { $details{$a}{$subject}{'unqIdentities'}[0] <=> $details{$b}{$subject}{'unqIdentities'}[0] || $details{$a}{$subject}{'occurrences'} <=> $details{$b}{$subject}{'occurrences'} } @crisprsHit );
-        $sortedCRISPRS{$subject} = \@sorted;
+        my @sorted = ( sort { $details{$a}{$subject}{'unqIdentities'}[0] <=> $details{$b}{$subject}{'unqIdentities'}[0] || $details{$a}{$subject}{'occurrences'} <=> $details{$b}{$subject}{'occurrences'} } @gRNAsHit );
+        $sortedgRNAs{$subject} = \@sorted;
     }
 
-    return (\@subjects, \%sortedCRISPRS, \%details);
+    return (\@subjects, \%sortedgRNAs, \%details);
 }
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -348,7 +348,7 @@ sub sortResults {
 # $return = sorted identities ascending numerically
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub sortIdentities {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets->{$crispr}{$subject}{\'hsps\'})';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets->{$gRNA}{$subject}{\'hsps\'})';
     @_ == 1 or die wrongNumberArguments(), $filledUsage;
 
     my ($hsps) = @_;
