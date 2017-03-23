@@ -25,7 +25,7 @@ use MyConfig; use MyIO;
 
 =head1 NAME
 
-Search - package searching CRISPR sequences and offsite targets
+Search - package searching gRNA sequences and offsite targets for CRISPR targeting
 
 =head1 SYNOPSIS
 
@@ -133,28 +133,26 @@ sub findOligo {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 =head2 blast
 
-    Arg [1]     : CRISPR fasta file
+    Arg [1]     : gRNA fasta file
 
-    Arg [2]     : Arrays with subject sequence file(s) provided for search
+    Arg [2]     : Array reference with subject sequence file(s) provided for search
 
     Arg [3]     : Output file name
 
-    Arg [4]     : Output directory
+    Example     : Search::blast($fastaFile, \@SUBJSEQS, $OUTFILE);
 
-    Example     : Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE);
-
-    Description : Run BLAST+ search for CRISPR targets
+    Description : Run BLAST+ search for gRNA sequences
 
     Returntype  : Hash reference
 
-    Status      : Development
+    Status      : Stable
 
 =cut
 sub blast {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%CRISPRfile, \@SUBJSEQS, $OUTFILE)';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '(\%fastaFile, \@SUBJSEQS, $OUTFILE)';
     @_ == 3 or confess wrongNumberArguments(), $filledUsage;
 
-    my ($CRPfile, $SUBJSEQS, $OUTFILE) = @_;
+    my ($fasta, $SUBJSEQS, $OUTFILE) = @_;
     my @SUBJSEQS = @$SUBJSEQS;
     my (%targets, $info, $hsps);
     my $outDir = $main::OUTDIR;
@@ -166,7 +164,7 @@ sub blast {
         my $subjName = _getSeqName($subject);
         my $outFile = "$outDir/blast/$subjName\_$OUTFILE\_blast.txt";
 
-        say "Searching CRISPR targets against $subject";
+        say "Searching gRNA sequences against $subject";
 
         # Create StandAloneBlastPlus Factory
         my $fac = Bio::Tools::Run::StandAloneBlastPlus->new(
@@ -174,7 +172,7 @@ sub blast {
                 );
 
         # Perform BLAST call
-        $fac->blastn(   -query          => $CRPfile,
+        $fac->blastn(   -query          => $fasta,
                         -outfile        => $outFile,
                         -method_args    => [ -word_size => 7],
                     );
@@ -182,17 +180,17 @@ sub blast {
         # Rewind to beginning of results and get all
         $fac->rewind_results;
 
-        # Process each CRISPR
+        # Process each gRNA sequence
         while ( my $result = $fac->next_result ) {
-            my ($crispr)    = $result->query_name =~ /(.*):\d+/;; # CRISPR sequence name ex.) 'CRISPR_0', removes appendend positioning
+            my ($gRNA)  = $result->query_name =~ /(.*):\d+/;; # gRNA sequence name ex.) 'gRNA_0', removes appendend positioning
             my $numHits = $result->num_hits;
 
-            # Resolve when CRISPR target has no matches
-            say "\t$crispr has $numHits hits here" if ($numHits == 0);
+            # Resolve when gRNA sequences has no matches in subject
+            say "\t$gRNA has $numHits hits here" if ($numHits == 0);
 
             # Default anonymous hashes for storing BLAST results
-            # $info hash stores each CRISPR BLAST result info
-            # $hsps hash stores that match result's hsps
+            # $info hash stores each gRNA BLAST result's info
+            # $hsps hash stores that match's High-scoring Segment Pairs (HSPs) result
             $info = {
                 'numhits'       => $numHits,
                 'occurrences'   => 0,
@@ -210,7 +208,7 @@ sub blast {
                 'gaps'          => 0,
             };
 
-            # Process each CRISPR hit
+            # Process each gRNA hit
             while ( my $hit = $result->next_hit ) {
 
                 $info->{'occurrences'} = $hit->num_hsps;
@@ -230,10 +228,10 @@ sub blast {
                         'nident'        => $hsp->num_identical,
                         'gaps'          => $hsp->gaps,
                     };
-                    push @{ $targets{$crispr}{$subjName}{'hsps'} } , $hsps;
+                    push @{ $targets{$gRNA}{$subjName}{'hsps'} } , $hsps;
                 }
             }
-            push @{ $targets{$crispr}{$subjName}{'info'} } , $info;
+            push @{ $targets{$gRNA}{$subjName}{'info'} } , $info;
         }
         $fac->cleanup; #clean up temp database files
     }
@@ -241,11 +239,11 @@ sub blast {
     say "\nBLAST files saved in: '$outDir/blast' ";
 
     # Hash of Hashes of Hashes of Arrays of Hash to store BLAST results for each query
-    # -- Hash key == CRISRP name
+    # -- Hash key == gRNA name
     # -- Hash key == Subject name
     # -- Hash key == 'info'
     # -- Hash key == 'hsps'
-    # -- Array accounts for multiple hits for each CRISPR sequence as hashes....
+    # -- Array accounts for multiple hits for each gRNA sequence as hashes....
     # -- Hash contains BLAST match info
     return(\%targets);
 }
