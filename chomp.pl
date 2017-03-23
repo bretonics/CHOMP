@@ -78,8 +78,8 @@ my @SUBJSEQS; # sequence file to use in BLAST search
 # CALLS
 mkDir($OUTDIR);
 my $gRNAs       = findOligo($seqDetails, $WINDOWSIZE); # gRNA HoH
-my $CRPfile     = writeCRPfasta($gRNAs, $OUTFILE); # Write gRNAa FASTA file
-my $targets     = Search::blast($CRPfile, \@SUBJSEQS, $OUTFILE); # gRNA target hits
+my $fastaFile   = writeFasta($gRNAs, $OUTFILE); # Write gRNAs fasta file
+my $targets     = Search::blast($fastaFile, \@SUBJSEQS, $OUTFILE); # gRNA target hits
 writeCRPfile($gRNAs, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 
 #-------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ sub getSeqDetails {
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # $return = ($outFile);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-sub writeCRPfasta {
+sub writeFasta {
     my $filledUsage = 'Usage: ' . (caller(0))[3] . '($gRNAs, $OUTFILE)';
     @_ == 2 or die wrongNumberArguments(), $filledUsage;
 
