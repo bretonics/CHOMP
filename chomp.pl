@@ -94,18 +94,15 @@ writeResults($gRNAs, $targets, $DOWNSEQ, $UPSEQ, $WINDOWSIZE, $OUTFILE);
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub checks {
     # Command line arguments passed
-    unless ($SEQ) {
-        die 'Did not provide an input file, -seq <infile>', $USAGE;
-    }
-    unless ($DOWNSEQ){
-        say 'Did not provide a DOWN stream sequence to append to gRNA seq, -down <seq>' if($VERBOSE);
-    }
-    unless ($UPSEQ){
-        say 'Did not provide an UP stream sequence to append to gRNA seq, -up <seq>' if($VERBOSE);
-    }
-    unless ($OUTFILE) {
-        die 'Did not provide an output file, -out <outfile>', $USAGE;
-    }
+
+    # Exits
+    die 'Did not provide an input file, -seq <infile>', $USAGE unless ($SEQ);
+    die 'Did not provide an output file, -out <outfile>', $USAGE unless ($OUTFILE) ;
+
+    # Warnings
+    say 'Did not provide a DOWN stream sequence to append to gRNA seq, -down <seq>' unless ($DOWNSEQ && $VERBOSE);
+    say 'Did not provide an UP stream sequence to append to gRNA seq, -up <seq>' unless ($UPSEQ && $VERBOSE);
+
 
     setParameters(); # set parameters to use in calls
 
@@ -297,7 +294,7 @@ sub sortResults {
             next if ( @{ $targets{$gRNA}{$subject}{'info'} }[0]->{'numhits'} == 0 );
 
             my @identities;
-            my @ids = sortIdentities( $targets->{$gRNA}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each gRNA query
+            my @ids = sortIdentities( $targets{$gRNA}{$subject}{'hsps'} ); # get sorted list of all BLAST hits (and for all subjects) for each gRNA query
             push @identities, @ids; # push identities list for each subject
 
             # Remove duplicates
@@ -348,7 +345,7 @@ sub sortResults {
 # $return = sorted identities ascending numerically
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 sub sortIdentities {
-    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets->{$gRNA}{$subject}{\'hsps\'})';
+    my $filledUsage = 'Usage: ' . (caller(0))[3] . '($targets{$gRNA}{$subject}{\'hsps\'})';
     @_ == 1 or die wrongNumberArguments(), $filledUsage;
 
     my ($hsps) = @_;
