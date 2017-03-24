@@ -152,7 +152,7 @@ sub writeResults {
 
     my %targets = %$targets;
     my $num     = keys %$gRNAs; # number of gRNA sequences
-    my $outFile = "$OUTDIR/$OUTFILE.txt";
+    my $outFile = "$OUTDIR/$file.txt";
 
     my $FH = getFH(">", $outFile);
     say $FH "Name\tSequence\tStrand\tPalindrome\tSubject\tStart\tOccurrences\tIdentities";
