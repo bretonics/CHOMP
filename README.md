@@ -68,8 +68,8 @@ Report with each gRNA sequence's details.
 
 CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which gRNA sequence is best to use for target.
 
-| Name | Sequence | Strand | Palindrome | Subject | Start | Occurrences | Identities
-| :------------- | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- |
+| Name | Sequence | Strand | Palindrome | Subject | Start | Occurrences | Identities |
+| :------------- | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- | :------------- |
 | gRNA_13 | TCGTCATGCATGCTCGCTCCGGG | reverse | No | test | 173 | 1 | 8
 | gRNA_12 | TTCGTCATGCATGCTCGCTCCGG | reverse | No | test | 174 | 1 | 8
 | gRNA_3 | TGTGATCACGTACTATTATGCGG | plus | No | test | 116 | 2 | 8
