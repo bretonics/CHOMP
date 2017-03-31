@@ -6,6 +6,7 @@
 [![Pending Pull-Requests](http://githubbadges.herokuapp.com/bretonics/CHOMP/pulls)](https://github.com/bretonics/CHOMP/pulls)
 [![GitHub license](https://img.shields.io/badge/License-MIT-red.svg)](https://bretonics.mit-license.org/)
 ![](https://reposs.herokuapp.com/?path=bretonics/CHOMP&color=lightgrey)
+[![codecov](https://codecov.io/gh/bretonics/CHOMP/branch/unit-tests/graph/badge.svg)](https://codecov.io/gh/bretonics/CHOMP/branch/unit-tests)
 
 
 
