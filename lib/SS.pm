@@ -18,7 +18,7 @@ use RNA; # ViennaRNA
 #   FILE:           SSpm
 #   LICENSE:        [LICENSE]
 #   USAGE:          Predict RNA secondary structures
-#   DEPENDENCIES:   ViennaRNA (http://www.tbi.univie.ac.at/RNA/)
+#   DEPENDENCIES:   ViennaRNA (https://www.tbi.univie.ac.at/RNA/)
 #
 # ==============================================================================
 

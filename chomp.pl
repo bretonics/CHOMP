@@ -12,7 +12,7 @@ use MyConfig; use MyIO; use Handlers;
 
 # ==============================================================================
 #
-#   CAPITAN:        Andres Breton, http://andresbreton.com
+#   CAPITAN:        Andres Breton, https://andresbreton.com
 #   FILE:           chomp.pl
 #   LICENSE:        MIT
 #   USAGE:          Find guide RNA (gRNA) sequences for CRISPR targeting

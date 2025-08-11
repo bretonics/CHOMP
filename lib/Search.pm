@@ -15,7 +15,7 @@ use MyConfig; use MyIO;
 
 # ==============================================================================
 #
-#   CAPITAN:        Andres Breton, http://andresbreton.com
+#   CAPITAN:        Andres Breton, https://andresbreton.com
 #   FILE:           Search.pm
 #   LICENSE:
 #   DEPENDENCIES:   - NCBI's BLAST+ CL utility

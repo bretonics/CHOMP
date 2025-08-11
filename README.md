@@ -1,14 +1,11 @@
 # CHOMP 🐊
 
-
-[![GitHub version](https://badge.fury.io/gh/bretonics%2FCHOMP.svg)](http://badge.fury.io/gh/bretonics%2FCHOMP)
+[![GitHub version](https://badge.fury.io/gh/bretonics%2FCHOMP.svg)](https://badge.fury.io/gh/bretonics%2FCHOMP)
 [![GitHub license](https://img.shields.io/badge/License-MIT-red.svg)](https://bretonics.mit-license.org/)
 [![codecov](https://codecov.io/gh/bretonics/CHOMP/branch/unit-tests/graph/badge.svg)](https://codecov.io/gh/bretonics/CHOMP/branch/unit-tests)
-[![Github Issues](http://githubbadges.herokuapp.com/bretonics/CHOMP/issues)](https://github.com/bretonics/CHOMP/issues)
-[![Pending Pull-Requests](http://githubbadges.herokuapp.com/bretonics/CHOMP/pulls)](https://github.com/bretonics/CHOMP/pulls)
+[![Github Issues](https://githubbadges.herokuapp.com/bretonics/CHOMP/issues)](https://github.com/bretonics/CHOMP/issues)
+[![Pending Pull-Requests](https://githubbadges.herokuapp.com/bretonics/CHOMP/pulls)](https://github.com/bretonics/CHOMP/pulls)
 ![](https://reposs.herokuapp.com/?path=bretonics/CHOMP&color=lightgrey)
-
-
 
 CRISPR Tool
 ---
@@ -19,12 +16,12 @@ CHOMP will search for all **'n'** window sized guide RNAs (gRNAs) sequences cont
 
 It will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with number of matching bases for each subject/query hit. You can use that to determine which gRNAs you may want to use as CRISPR target(s).
 
-
 ## Run CHOMP
+
     perl chomp.pl -seq usr/test.fasta -out gRNAs
 
-
 ## Arguments
+
     -seq                Sequence file to search gRNAs [required]
     -genome             Genome sequence file(s) to BLAST search (search instead of -seq)
     -down               Down sequence to append
@@ -35,11 +32,12 @@ It will report how many occurrences of this sequence are present in the target s
     -outdir             Out directory name
     -help               Shows this message
 
-
 ## Output
+
 Writes 2 files under the default directory **gRNAs**:
 
 #### **'.fasta'**
+
 Fasta file of each gRNA sequence found.
 
     >gRNA_0:0
@@ -63,8 +61,8 @@ Fasta file of each gRNA sequence found.
 Suffix digit after '**:**' denotes nucleotide position in sequence where gRNA was found. Ex.) gRNA_16:**99**
 , gRNA was found starting at nucleotide position **99** in `-seq` sequence.
 
-
 #### **'.txt'**
+
 Report with each gRNA sequence's details.
 
 CHOMP will report how many occurrences of this sequence are present in the target sequence (off-target sites), along with the number of base pair matches (identities) for each. You can use this to determine which gRNA sequence is best to use for target.
@@ -88,6 +86,5 @@ CHOMP will report how many occurrences of this sequence are present in the targe
 | gRNA_1 | AAAAAATTTTCTCTATCTAACGG | plus | No | test | 24 | 3 | 16,10,8
 | gRNA_11 | TATAGCATGGGCCCCCGATAGGG | reverse | No | test | 207 | 1 | 23
 | gRNA_10 | CTATAGCATGGGCCCCCGATAGG | reverse | No | test | 208 | 1 | 23
-
 
 >Table is sorted in increasing order using the top identity for each gRNA sequence, and then sorted by number of occurrences, in current subject.
